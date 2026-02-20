@@ -33,3 +33,6 @@ pnpm-debug.log*
 Thumbs.db
 .idea/
 .vscode/
+
+# Local setup scripts
+setup.sh
