@@ -2,6 +2,7 @@ import { db } from "../../config/db";
 import { buildCoachPrompt } from "../../ai/coach.prompt";
 import { getGroqCompletion } from "../../ai/groq.service";
 import { Message } from "../../types/global.types";
+import { logError, logInfo, logWarn } from "../../utils/logger";
 import {
   FeedbackDto,
   FeedbackGenerationResult,
@@ -158,6 +159,12 @@ const persistFeedback = async (input: {
 }): Promise<FeedbackDto> => {
   const client = await db.connect();
   try {
+    logInfo("feedback.persist.begin", {
+      sessionId: input.sessionId,
+      userId: input.userId,
+      scenarioId: input.scenarioId,
+    });
+
     await client.query("BEGIN");
 
     const stored = await client.query<FeedbackRow>(
@@ -202,13 +209,20 @@ const persistFeedback = async (input: {
 
     await client.query(
       `INSERT INTO public.progress_snapshots (
+        session_id,
         user_id,
         scenario_id,
         confidence_score,
         session_count
       )
-      VALUES ($1, $2, $3, $4)`,
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (session_id) DO UPDATE
+      SET
+        confidence_score = EXCLUDED.confidence_score,
+        session_count = EXCLUDED.session_count,
+        recorded_at = NOW()`,
       [
+        input.sessionId,
         input.userId,
         input.scenarioId,
         input.feedback.confidenceScore,
@@ -217,9 +231,19 @@ const persistFeedback = async (input: {
     );
 
     await client.query("COMMIT");
+    logInfo("feedback.persist.success", {
+      sessionId: input.sessionId,
+      userId: input.userId,
+      confidenceScore: input.feedback.confidenceScore,
+    });
     return mapFeedback(stored.rows[0]);
   } catch (error) {
     await client.query("ROLLBACK");
+    logError("feedback.persist.failed", {
+      sessionId: input.sessionId,
+      userId: input.userId,
+      error: (error as Error).message,
+    });
     throw error;
   } finally {
     client.release();
@@ -248,11 +272,21 @@ export const ensureSessionFeedback = async (input: {
   sessionId: string;
   allowAutoGenerate?: boolean;
 }): Promise<FeedbackGenerationResult> => {
+  logInfo("feedback.ensure.begin", {
+    sessionId: input.sessionId,
+    userId: input.userId,
+    allowAutoGenerate: Boolean(input.allowAutoGenerate),
+  });
+
   const context = await getSessionContext(input.userId, input.sessionId);
   if (!context) throw createHttpError(404, "Session not found");
 
   const existing = await getExistingFeedback(input.sessionId);
   if (existing) {
+    logInfo("feedback.ensure.cached", {
+      sessionId: input.sessionId,
+      userId: input.userId,
+    });
     return { feedback: existing, generatedNow: false };
   }
 
@@ -261,6 +295,11 @@ export const ensureSessionFeedback = async (input: {
   }
 
   if (context.session_status !== "completed") {
+    logWarn("feedback.ensure.rejected_non_completed", {
+      sessionId: input.sessionId,
+      userId: input.userId,
+      status: context.session_status,
+    });
     throw createHttpError(409, "Feedback is available only for completed sessions");
   }
 
@@ -272,6 +311,11 @@ export const ensureSessionFeedback = async (input: {
     scenarioId: context.scenario_id,
     userId: context.user_id,
     feedback: payload,
+  });
+
+  logInfo("feedback.ensure.generated", {
+    sessionId: input.sessionId,
+    userId: input.userId,
   });
 
   return { feedback, generatedNow: true };

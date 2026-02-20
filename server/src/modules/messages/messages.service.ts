@@ -4,6 +4,7 @@ import { buildCharacterPrompt, buildMessages } from "../../ai/character.prompt";
 import { manageContext } from "../../ai/context.manager";
 import { streamGroqResponse } from "../../ai/groq.service";
 import { Message, Scenario } from "../../types/global.types";
+import { logError, logInfo, logWarn } from "../../utils/logger";
 import { SendSessionMessageInput } from "./messages.types";
 
 interface SessionContextRow {
@@ -95,7 +96,10 @@ const readHistoryFromCache = async (sessionId: string): Promise<Message[] | null
     if (!raw) return null;
     return mapCachedHistory(raw);
   } catch (error) {
-    console.warn("Redis read failed for session history:", error);
+    logWarn("messages.cache.read_failed", {
+      sessionId,
+      error: (error as Error).message,
+    });
     return null;
   }
 };
@@ -121,7 +125,10 @@ const writeHistoryToCache = async (
       { EX: HISTORY_CACHE_TTL_SECONDS }
     );
   } catch (error) {
-    console.warn("Redis write failed for session history:", error);
+    logWarn("messages.cache.write_failed", {
+      sessionId,
+      error: (error as Error).message,
+    });
   }
 };
 
@@ -211,12 +218,24 @@ export const streamSessionMessage = async ({
   payload,
   response,
 }: StreamSessionMessageInput): Promise<void> => {
+  logInfo("messages.stream.begin", {
+    sessionId,
+    userId,
+    contentLength: payload.content.length,
+  });
+
   const context = await getSessionContext(userId, sessionId);
   if (!context) {
+    logWarn("messages.stream.session_not_found", { sessionId, userId });
     throw createHttpError(404, "Session not found");
   }
 
   if (context.status !== "active") {
+    logWarn("messages.stream.session_inactive", {
+      sessionId,
+      userId,
+      status: context.status,
+    });
     throw createHttpError(409, "Session is not active");
   }
 
@@ -236,8 +255,23 @@ export const streamSessionMessage = async ({
   );
   const llmMessages = buildMessages(systemPrompt, promptHistory);
 
-  const assistantContent = await streamGroqResponse(llmMessages, response);
+  let assistantContent = "";
+  try {
+    assistantContent = await streamGroqResponse(llmMessages, response);
+  } catch (error) {
+    logError("messages.stream.model_failed", {
+      sessionId,
+      userId,
+      error: (error as Error).message,
+    });
+    throw error;
+  }
   const assistantMessage = await insertMessage(sessionId, "assistant", assistantContent);
 
   await writeHistoryToCache(sessionId, [...history, assistantMessage]);
+  logInfo("messages.stream.success", {
+    sessionId,
+    userId,
+    assistantContentLength: assistantContent.length,
+  });
 };

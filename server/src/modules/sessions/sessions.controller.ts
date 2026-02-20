@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { ensureSessionFeedback } from "../feedback/feedback.service";
+import { logError, logInfo } from "../../utils/logger";
 import {
   endSessionById,
   getSessionDetailById,
@@ -94,6 +95,12 @@ export const endSession = async (
     if (!session) return res.status(404).json({ error: "Session not found" });
 
     if (session.status !== "completed") {
+      logInfo("sessions.end.completed_without_feedback", {
+        requestId: req.requestId,
+        sessionId: id,
+        userId: req.user.userId,
+        status: session.status,
+      });
       return res.status(200).json({ session, feedback: null });
     }
 
@@ -103,9 +110,20 @@ export const endSession = async (
         sessionId: id,
         allowAutoGenerate: true,
       });
+      logInfo("sessions.end.feedback_ready", {
+        requestId: req.requestId,
+        sessionId: id,
+        userId: req.user.userId,
+        generatedNow: feedback.generatedNow,
+      });
       return res.status(200).json({ session, feedback });
     } catch (feedbackError) {
-      console.error("Feedback generation on session end failed:", feedbackError);
+      logError("sessions.end.feedback_failed", {
+        requestId: req.requestId,
+        sessionId: id,
+        userId: req.user.userId,
+        error: (feedbackError as Error).message,
+      });
       return res.status(200).json({
         session,
         feedback: null,

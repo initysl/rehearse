@@ -88,6 +88,7 @@ declare global {
     interface Request {
       user?: JwtPayload;
       accessToken?: string;
+      requestId?: string;
     }
   }
 }

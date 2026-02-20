@@ -13,6 +13,7 @@ export interface UserProfile {
 
 export interface ProgressSnapshotDto {
   id: string;
+  sessionId: string | null;
   scenarioId: string;
   scenarioTitle: string;
   scenarioCategory: string;

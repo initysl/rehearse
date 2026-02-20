@@ -19,6 +19,7 @@ interface ProfileRow {
 
 interface ProgressSnapshotRow {
   id: string;
+  session_id: string | null;
   scenario_id: string;
   scenario_title: string;
   scenario_category: string;
@@ -46,6 +47,7 @@ const toUserProfile = (row: ProfileRow): UserProfile => ({
 
 const toProgressSnapshot = (row: ProgressSnapshotRow): ProgressSnapshotDto => ({
   id: row.id,
+  sessionId: row.session_id,
   scenarioId: row.scenario_id,
   scenarioTitle: row.scenario_title,
   scenarioCategory: row.scenario_category,
@@ -151,6 +153,7 @@ export const getUserProgressByUserId = async (
   const snapshotsResult = await db.query<ProgressSnapshotRow>(
     `SELECT
       ps.id,
+      ps.session_id,
       ps.scenario_id,
       sc.title AS scenario_title,
       sc.category AS scenario_category,
