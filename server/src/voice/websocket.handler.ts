@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
 import { transcribeAudio } from "./stt.service";
-import { streamTTS } from "./tts.service";
+import { streamTTS } from "./audio.pipeline";
 
 export const handleVoiceSession = (ws: WebSocket, sessionId: string) => {
   const audioChunks: Buffer[] = [];

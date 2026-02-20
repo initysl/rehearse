@@ -1,3 +1,240 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
+import { ZodError } from "zod";
+import { SupabaseRequestError } from "../../config/supabase";
+import {
+  exchangeGoogleOAuthCode,
+  getGoogleOAuthUrl,
+  loginWithEmailPassword,
+  logoutSession,
+  refreshAuthSession,
+  registerWithEmailPassword,
+} from "./auth.service";
+import {
+  googleOAuthCallbackQuerySchema,
+  googleOAuthStartQuerySchema,
+  loginSchema,
+  refreshTokenSchema,
+  registerSchema,
+} from "./auth.types";
+import {
+  buildErrorRedirect,
+  clearAuthCookies,
+  clearGoogleOauthStateCookie,
+  createPkceChallenge,
+  getAccessTokenFromCookies,
+  getRefreshTokenFromCookies,
+  readGoogleOauthStateCookie,
+  sanitizeRedirectTarget,
+  setAuthCookies,
+  setGoogleOauthStateCookie,
+} from "./auth.utils";
 
-// TODO: Implement auth controller methods
+const isZodError = (error: unknown): error is ZodError => error instanceof ZodError;
+
+const handleControllerError = (
+  error: unknown,
+  next: NextFunction
+): void => {
+  if (isZodError(error)) {
+    const validationError = new Error("Invalid request payload");
+    (validationError as Error & { statusCode: number }).statusCode = 400;
+    validationError.message = error.errors
+      .map((issue) => `${issue.path.join(".") || "field"}: ${issue.message}`)
+      .join("; ");
+    return next(validationError);
+  }
+
+  if (error instanceof SupabaseRequestError) {
+    const supabaseError = new Error(error.message);
+    (supabaseError as Error & { statusCode: number }).statusCode =
+      error.statusCode;
+    return next(supabaseError);
+  }
+
+  return next(error as Error);
+};
+
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const payload = registerSchema.parse(req.body);
+    const result = await registerWithEmailPassword(payload);
+    const responsePayload =
+      result.user.emailConfirmed && result.session
+        ? result
+        : { ...result, session: null, requiresEmailConfirmation: true };
+
+    if (responsePayload.session) {
+      setAuthCookies(res, responsePayload.session);
+    }
+    return res.status(201).json(responsePayload);
+  } catch (error) {
+    return handleControllerError(error, next);
+  }
+};
+
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const payload = loginSchema.parse(req.body);
+    const result = await loginWithEmailPassword(payload);
+    if (!result.user.emailConfirmed) {
+      clearAuthCookies(res);
+      return res
+        .status(403)
+        .json({ error: "Email confirmation required before login" });
+    }
+
+    if (result.session) {
+      setAuthCookies(res, result.session);
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleControllerError(error, next);
+  }
+};
+
+export const refreshToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const parsed = refreshTokenSchema.safeParse(req.body || {});
+    const refreshToken = parsed.success
+      ? parsed.data.refreshToken
+      : getRefreshTokenFromCookies(req);
+
+    if (!refreshToken) {
+      return res.status(400).json({ error: "refreshToken is required" });
+    }
+
+    const payload = refreshTokenSchema.parse({ refreshToken });
+    const result = await refreshAuthSession(payload);
+    if (!result.user.emailConfirmed) {
+      clearAuthCookies(res);
+      return res
+        .status(403)
+        .json({ error: "Email confirmation required before session refresh" });
+    }
+
+    if (result.session) {
+      setAuthCookies(res, result.session);
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleControllerError(error, next);
+  }
+};
+
+export const googleOAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const query = googleOAuthStartQuerySchema.parse(req.query);
+    const { codeVerifier, codeChallenge, state } = createPkceChallenge();
+
+    setGoogleOauthStateCookie(res, {
+      state,
+      codeVerifier,
+      next: query.next,
+      issuedAt: Date.now(),
+    });
+
+    const result = await getGoogleOAuthUrl({ ...query, state, codeChallenge });
+    return res.redirect(302, result.url);
+  } catch (error) {
+    return handleControllerError(error, next);
+  }
+};
+
+export const googleOAuthCallback = async (
+  req: Request,
+  res: Response,
+  _next: NextFunction
+) => {
+  try {
+    const query = googleOAuthCallbackQuerySchema.parse(req.query);
+    const stateCookie = readGoogleOauthStateCookie(req);
+    clearGoogleOauthStateCookie(res);
+
+    if (query.error) {
+      clearAuthCookies(res);
+      return res.redirect(302, buildErrorRedirect());
+    }
+
+    if (!query.code || !query.state || !stateCookie) {
+      clearAuthCookies(res);
+      return res.redirect(302, buildErrorRedirect());
+    }
+
+    if (stateCookie.state !== query.state) {
+      clearAuthCookies(res);
+      return res.redirect(302, buildErrorRedirect());
+    }
+
+    if (Date.now() - stateCookie.issuedAt > 1000 * 60 * 10) {
+      clearAuthCookies(res);
+      return res.redirect(302, buildErrorRedirect());
+    }
+
+    const result = await exchangeGoogleOAuthCode({
+      code: query.code,
+      codeVerifier: stateCookie.codeVerifier,
+    });
+
+    if (!result.session || !result.user.emailConfirmed) {
+      clearAuthCookies(res);
+      return res.redirect(302, buildErrorRedirect());
+    }
+
+    setAuthCookies(res, result.session);
+    return res.redirect(302, sanitizeRedirectTarget(stateCookie.next));
+  } catch (error) {
+    console.error("Google OAuth callback failed:", error);
+    clearAuthCookies(res);
+    return res.redirect(302, buildErrorRedirect());
+  }
+};
+
+export const logout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = req.accessToken || getAccessTokenFromCookies(req);
+    if (token) {
+      await logoutSession(token);
+    }
+
+    clearAuthCookies(res);
+    clearGoogleOauthStateCookie(res);
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    clearAuthCookies(res);
+    return handleControllerError(error, next);
+  }
+};
+
+export const me = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    return res.status(200).json({ user: req.user });
+  } catch (error) {
+    return handleControllerError(error, next);
+  }
+};

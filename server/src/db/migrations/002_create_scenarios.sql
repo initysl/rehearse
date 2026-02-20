@@ -6,7 +6,7 @@ CREATE TABLE scenarios (
   character_profile JSONB NOT NULL,
   difficulty_variants JSONB NOT NULL,
   is_custom BOOLEAN DEFAULT FALSE,
-  created_by UUID REFERENCES users(id),
+  created_by UUID REFERENCES auth.users(id),
   play_count INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

@@ -1,7 +1,10 @@
 // ── Auth ──────────────────────────────────────────────────────
 export interface JwtPayload {
   userId: string;
-  email: string;
+  email: string | null;
+  role: string;
+  emailConfirmed: boolean;
+  aud: string | null;
 }
 
 // ── User ──────────────────────────────────────────────────────
@@ -84,6 +87,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: JwtPayload;
+      accessToken?: string;
     }
   }
 }

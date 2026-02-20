@@ -7,7 +7,8 @@
     "dev": "nodemon",
     "build": "tsc",
     "start": "node dist/server.js",
-    "migrate": "ts-node src/db/migrate.ts"
+    "migrate": "ts-node src/db/migrate.ts",
+    "seed:scenarios": "ts-node src/db/seeds/scenarios.seed.ts"
   },
   "dependencies": {
     "express": "^4.18.2",

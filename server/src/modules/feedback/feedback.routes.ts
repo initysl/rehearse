@@ -1,7 +1,9 @@
 import { Router } from "express";
+import { authenticate } from "../../middleware/auth.middleware";
+import { getFeedbackForSession } from "./feedback.controller";
 
 const router = Router();
 
-// TODO: Define feedback routes
+router.get("/:sessionId", authenticate, getFeedbackForSession);
 
 export default router;

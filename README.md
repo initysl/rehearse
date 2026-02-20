@@ -42,15 +42,17 @@ Core product goals:
 What exists now in code:
 - Frontend app scaffold in `client` (Next.js app router baseline)
 - Backend server bootstrap with middleware and health endpoint
+- Supabase-backed auth (`email/password` + Google OAuth via backend callback)
+- Protected profile routes with token validation middleware
 - AI prompt builders and Groq streaming helper
 - Voice pipeline components (WebSocket handler, Whisper STT, OpenAI TTS)
 - PostgreSQL SQL migration files for core tables
 - Redis and PostgreSQL configuration wiring
+- Migration runner script (`server/src/db/migrate.ts`)
 
 What is still scaffold/TODO:
 - Most backend feature routes and module implementations in `server/src/modules/*`
 - Scenario seed data implementation
-- Migration runner script referenced by `npm run migrate` (`server/src/db/migrate.ts` is not present yet)
 
 ## Tech Stack
 
@@ -58,7 +60,7 @@ What is still scaffold/TODO:
 - Backend: Node.js, Express, TypeScript
 - Data: PostgreSQL, Redis
 - AI/Voice: Groq SDK, OpenAI (Whisper + TTS)
-- Security/Infra: Helmet, CORS, JWT, rate limiting
+- Security/Infra: Helmet, CORS, Supabase Auth, RLS, rate limiting
 
 ## Prerequisites
 
@@ -78,10 +80,11 @@ cp server/.env.example server/.env
 ```
 
 2. Fill required values in `server/.env`:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `COOKIE_SIGNING_SECRET`
 - `DATABASE_URL`
 - `REDIS_URL`
-- `JWT_SECRET`
-- `REFRESH_TOKEN_SECRET`
 - `GROQ_API_KEY`
 - `OPENAI_API_KEY`
 - `CLIENT_URL` (default `http://localhost:3000`)
