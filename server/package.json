@@ -9,7 +9,7 @@
     "start": "node dist/server.js",
     "migrate": "ts-node src/db/migrate.ts",
     "seed:scenarios": "ts-node src/db/seeds/scenarios.seed.ts",
-    "test": "node -r ts-node/register --test tests/**/*.test.ts"
+    "test": "node -r ts-node/register --test --test-concurrency=1 tests/**/*.test.ts"
   },
   "dependencies": {
     "express": "^4.18.2",

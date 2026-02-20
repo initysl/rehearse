@@ -1,8 +1,13 @@
 import { WebSocket } from "ws";
 import { transcribeAudio } from "./stt.service";
 import { streamTTS } from "./audio.pipeline";
+import { generateSessionReplyText } from "../modules/messages/messages.service";
+import { logError, logInfo, logWarn } from "../utils/logger";
 
-export const handleVoiceSession = (ws: WebSocket, sessionId: string) => {
+export const handleVoiceSession = (
+  ws: WebSocket,
+  context: { sessionId: string; userId: string }
+) => {
   const audioChunks: Buffer[] = [];
 
   ws.on("message", async (data: Buffer, isBinary: boolean) => {
@@ -16,6 +21,11 @@ export const handleVoiceSession = (ws: WebSocket, sessionId: string) => {
       const message = JSON.parse(data.toString());
 
       if (message.type === "audio_end") {
+        if (audioChunks.length === 0) {
+          ws.send(JSON.stringify({ type: "error", message: "No audio received" }));
+          return;
+        }
+
         // User stopped speaking — process the audio
         const audioBuffer = Buffer.concat(audioChunks);
         audioChunks.length = 0; // clear
@@ -23,17 +33,50 @@ export const handleVoiceSession = (ws: WebSocket, sessionId: string) => {
         ws.send(JSON.stringify({ type: "status", message: "transcribing" }));
 
         const transcript = await transcribeAudio(audioBuffer);
-        ws.send(JSON.stringify({ type: "transcript", text: transcript }));
+        if (!transcript.trim()) {
+          ws.send(JSON.stringify({ type: "status", message: "empty_transcript" }));
+          return;
+        }
 
-        // AI response via sentence streaming TTS is handled in audio.pipeline.ts
-        await streamTTS(transcript, sessionId, ws);
+        ws.send(JSON.stringify({ type: "transcript", text: transcript }));
+        ws.send(JSON.stringify({ type: "status", message: "generating_response" }));
+
+        const generated = await generateSessionReplyText({
+          userId: context.userId,
+          sessionId: context.sessionId,
+          userContent: transcript,
+        });
+
+        ws.send(
+          JSON.stringify({ type: "assistant_text", text: generated.assistantContent })
+        );
+
+        ws.send(JSON.stringify({ type: "status", message: "synthesizing_audio" }));
+        await streamTTS(generated.assistantContent, context.sessionId, ws);
+        ws.send(JSON.stringify({ type: "status", message: "idle" }));
       }
     } catch (err) {
+      logError("voice.ws.processing_failed", {
+        sessionId: context.sessionId,
+        userId: context.userId,
+        error: (err as Error).message,
+      });
       ws.send(JSON.stringify({ type: "error", message: "Voice processing failed" }));
     }
   });
 
   ws.on("close", () => {
-    console.log(`Voice session closed: ${sessionId}`);
+    logInfo("voice.ws.closed", {
+      sessionId: context.sessionId,
+      userId: context.userId,
+    });
+  });
+
+  ws.on("error", (error) => {
+    logWarn("voice.ws.socket_error", {
+      sessionId: context.sessionId,
+      userId: context.userId,
+      error: (error as Error).message,
+    });
   });
 };

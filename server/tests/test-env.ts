@@ -25,4 +25,3 @@ process.env.GOOGLE_OAUTH_REDIRECT_URL =
 process.env.COOKIE_SIGNING_SECRET =
   process.env.COOKIE_SIGNING_SECRET || "test-cookie-signing-secret";
 process.env.GROQ_API_KEY = process.env.GROQ_API_KEY || "test-groq-key";
-process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY || "test-openai-key";

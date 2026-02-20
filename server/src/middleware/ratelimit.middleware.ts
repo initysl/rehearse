@@ -19,6 +19,8 @@ const userAwareKeyGenerator = (req: Request): string => {
   return `ip:${req.ip || "unknown"}`;
 };
 
+const isTestEnv = process.env.NODE_ENV === "test";
+
 export const aiRateLimit = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 50,
@@ -26,7 +28,7 @@ export const aiRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: userAwareKeyGenerator,
-  store: createRedisStore("rl:ai:"),
+  store: isTestEnv ? undefined : createRedisStore("rl:ai:"),
   passOnStoreError: true,
 });
 
@@ -36,6 +38,6 @@ export const authRateLimit = rateLimit({
   message: { error: "Too many auth attempts — try again in 15 minutes" },
   standardHeaders: true,
   legacyHeaders: false,
-  store: createRedisStore("rl:auth:"),
+  store: isTestEnv ? undefined : createRedisStore("rl:auth:"),
   passOnStoreError: true,
 });

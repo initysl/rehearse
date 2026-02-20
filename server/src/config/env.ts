@@ -31,5 +31,12 @@ export const env = {
   COOKIE_SIGNING_SECRET: required("COOKIE_SIGNING_SECRET"),
   GROQ_API_KEY: required("GROQ_API_KEY"),
   GROQ_MODEL: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
-  OPENAI_API_KEY: required("OPENAI_API_KEY"),
+  GROQ_STT_MODEL: process.env.GROQ_STT_MODEL || "whisper-large-v3-turbo",
+  GROQ_TTS_MODEL: process.env.GROQ_TTS_MODEL || "canopylabs/orpheus-v1-english",
+  GROQ_TTS_VOICE: process.env.GROQ_TTS_VOICE || "troy",
+  GROQ_STREAM_TIMEOUT_MS: parseInt(process.env.GROQ_STREAM_TIMEOUT_MS || "30000", 10),
+  GROQ_COMPLETION_TIMEOUT_MS: parseInt(
+    process.env.GROQ_COMPLETION_TIMEOUT_MS || "15000",
+    10
+  ),
 };

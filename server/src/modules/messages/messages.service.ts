@@ -2,7 +2,7 @@ import { db } from "../../config/db";
 import { redis } from "../../config/redis";
 import { buildCharacterPrompt, buildMessages } from "../../ai/character.prompt";
 import { manageContext } from "../../ai/context.manager";
-import { streamGroqResponse } from "../../ai/groq.service";
+import { getGroqChatCompletion, streamGroqResponse } from "../../ai/groq.service";
 import { Message, Scenario } from "../../types/global.types";
 import { logError, logInfo, logWarn } from "../../utils/logger";
 import { SendSessionMessageInput } from "./messages.types";
@@ -37,6 +37,12 @@ interface StreamSessionMessageInput {
   sessionId: string;
   payload: SendSessionMessageInput;
   response: import("express").Response;
+}
+
+interface GenerateSessionReplyInput {
+  userId: string;
+  sessionId: string;
+  userContent: string;
 }
 
 const HISTORY_CACHE_TTL_SECONDS = 60 * 60 * 12;
@@ -274,4 +280,58 @@ export const streamSessionMessage = async ({
     userId,
     assistantContentLength: assistantContent.length,
   });
+};
+
+export const generateSessionReplyText = async ({
+  userId,
+  sessionId,
+  userContent,
+}: GenerateSessionReplyInput): Promise<{
+  userMessage: Message;
+  assistantMessage: Message;
+  assistantContent: string;
+}> => {
+  logInfo("messages.generate.begin", {
+    sessionId,
+    userId,
+    contentLength: userContent.length,
+  });
+
+  const context = await getSessionContext(userId, sessionId);
+  if (!context) {
+    throw createHttpError(404, "Session not found");
+  }
+
+  if (context.status !== "active") {
+    throw createHttpError(409, "Session is not active");
+  }
+
+  const userMessage = await insertMessage(sessionId, "user", userContent);
+  const cachedHistory = await readHistoryFromCache(sessionId);
+  const history = cachedHistory
+    ? [...cachedHistory, userMessage]
+    : await getHistoryFromDatabase(sessionId);
+
+  const promptHistory = manageContext(history);
+  const scenario = toScenario(context);
+  const systemPrompt = buildCharacterPrompt(
+    scenario,
+    context.difficulty_level,
+    context.custom_context || undefined
+  );
+
+  const assistantContent = await getGroqChatCompletion(
+    buildMessages(systemPrompt, promptHistory)
+  );
+
+  const assistantMessage = await insertMessage(sessionId, "assistant", assistantContent);
+  await writeHistoryToCache(sessionId, [...history, assistantMessage]);
+
+  logInfo("messages.generate.success", {
+    sessionId,
+    userId,
+    assistantContentLength: assistantContent.length,
+  });
+
+  return { userMessage, assistantMessage, assistantContent };
 };

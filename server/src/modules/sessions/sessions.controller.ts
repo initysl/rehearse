@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
-import { ensureSessionFeedback } from "../feedback/feedback.service";
+import { enqueueFeedbackGeneration } from "../../jobs/feedback.queue";
 import { logError, logInfo } from "../../utils/logger";
 import {
   endSessionById,
@@ -105,18 +105,22 @@ export const endSession = async (
     }
 
     try {
-      const feedback = await ensureSessionFeedback({
+      const feedbackQueue = enqueueFeedbackGeneration({
         userId: req.user.userId,
         sessionId: id,
-        allowAutoGenerate: true,
       });
       logInfo("sessions.end.feedback_ready", {
         requestId: req.requestId,
         sessionId: id,
         userId: req.user.userId,
-        generatedNow: feedback.generatedNow,
+        queueState: feedbackQueue.state,
       });
-      return res.status(200).json({ session, feedback });
+      return res.status(200).json({
+        session,
+        feedback: null,
+        feedbackStatus: "pending",
+        feedbackQueue,
+      });
     } catch (feedbackError) {
       logError("sessions.end.feedback_failed", {
         requestId: req.requestId,

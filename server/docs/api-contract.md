@@ -41,12 +41,12 @@ Base URL (local): `http://localhost:5000`
   - Response: `text/event-stream` token stream.
 - `POST /sessions/:id/end`
   - Body: `{ "status"?: "completed|abandoned" }`
-  - Notes: If completed, feedback generation is attempted automatically.
+  - Notes: If completed, feedback generation is queued asynchronously.
 
 ## Feedback (Protected)
 
 - `GET /feedback/:sessionId`
-  - Returns existing feedback or auto-generates for completed session.
+  - Returns existing feedback (`200`) or pending status (`202`) while queued.
 
 ## Users (Protected)
 
@@ -59,3 +59,11 @@ Base URL (local): `http://localhost:5000`
 
 - Errors return: `{ "error": string, "requestId"?: string }`
 - Every response includes `x-request-id` header.
+
+## Voice WebSocket
+
+- Endpoint: `ws://localhost:5000/ws/voice?sessionId=<uuid>&token=<accessToken>`
+- Message flow:
+  - Client sends binary `audio_chunk` frames
+  - Client sends JSON `{ "type": "audio_end" }`
+  - Server returns transcript + assistant text + streamed audio chunks

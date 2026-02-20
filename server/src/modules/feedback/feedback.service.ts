@@ -74,6 +74,18 @@ const getExistingFeedback = async (
   return mapFeedback(result.rows[0]);
 };
 
+export const getSessionFeedbackIfExists = async (input: {
+  userId: string;
+  sessionId: string;
+}): Promise<FeedbackDto | null> => {
+  const context = await getSessionContext(input.userId, input.sessionId);
+  if (!context) {
+    throw createHttpError(404, "Session not found");
+  }
+
+  return getExistingFeedback(input.sessionId);
+};
+
 const getSessionContext = async (
   userId: string,
   sessionId: string
@@ -260,11 +272,20 @@ const generateFeedbackPayload = async (
     );
   }
 
-  const prompt = buildCoachPrompt(scenarioGoal, transcript);
-  const completion = await getGroqCompletion(prompt);
-  const jsonString = extractJsonObject(completion);
-  const parsed = JSON.parse(jsonString) as unknown;
-  return feedbackResultSchema.parse(parsed);
+  try {
+    const prompt = buildCoachPrompt(scenarioGoal, transcript);
+    const completion = await getGroqCompletion(prompt);
+    const jsonString = extractJsonObject(completion);
+    const parsed = JSON.parse(jsonString) as unknown;
+    return feedbackResultSchema.parse(parsed);
+  } catch (error) {
+    logWarn("feedback.generate.fallback_used", {
+      reason: (error as Error).message,
+    });
+    return feedbackResultSchema.parse(
+      createFallbackFeedback("AI analysis failed. Returning safe fallback coaching output.")
+    );
+  }
 };
 
 export const ensureSessionFeedback = async (input: {
