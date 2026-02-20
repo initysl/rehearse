@@ -105,7 +105,7 @@ export const endSession = async (
     }
 
     try {
-      const feedbackQueue = enqueueFeedbackGeneration({
+      const feedbackQueue = await enqueueFeedbackGeneration({
         userId: req.user.userId,
         sessionId: id,
       });

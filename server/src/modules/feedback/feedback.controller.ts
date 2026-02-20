@@ -34,14 +34,15 @@ export const getFeedbackForSession = async (
     });
 
     if (existing) {
+      const queueStatus = await getFeedbackJobStatus(sessionId);
       return res.status(200).json({
         feedback: existing,
         generatedNow: false,
-        queueStatus: getFeedbackJobStatus(sessionId),
+        queueStatus,
       });
     }
 
-    const queueStatus = enqueueFeedbackGeneration({
+    const queueStatus = await enqueueFeedbackGeneration({
       userId: req.user.userId,
       sessionId,
     });

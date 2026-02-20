@@ -4,6 +4,7 @@ import app from "./app";
 import { env } from "./config/env";
 import { db } from "./config/db";
 import { connectRedis } from "./config/redis";
+import { startFeedbackQueueWorker } from "./jobs/feedback.queue";
 import { supabaseAuthApi, supabaseConfig } from "./config/supabase";
 import { logError, logInfo, logWarn } from "./utils/logger";
 import { handleVoiceSession } from "./voice/websocket.handler";
@@ -92,6 +93,7 @@ const start = async () => {
       redis: true,
       postgres: true,
     });
+    startFeedbackQueueWorker();
 
     server.listen(env.PORT, () => {
       logInfo("server.started", {
