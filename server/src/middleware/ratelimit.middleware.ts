@@ -1,12 +1,15 @@
 import { Request } from "express";
 import rateLimit from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
-import { redis } from "../config/redis";
+import { connectRedis, redis } from "../config/redis";
 
 const createRedisStore = (prefix: string) =>
   new RedisStore({
     prefix,
     sendCommand: async (...args: string[]) => {
+      if (!redis.isOpen) {
+        await connectRedis();
+      }
       const response = await (redis as unknown as {
         sendCommand: (command: string[]) => Promise<unknown>;
       }).sendCommand(args);
