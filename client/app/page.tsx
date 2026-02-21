@@ -116,7 +116,7 @@ function ScoreRing({
       <div
         className='flex h-14 w-14 items-center justify-center rounded-full'
         style={{
-          background: `conic-linear(${color} ${score * 3.6}deg, rgba(255,255,255,0.06) 0deg)`,
+          background: `conic-gradient(${color} ${score * 3.6}deg, rgba(255,255,255,0.06) 0deg)`,
           padding: '3px',
         }}
       >
@@ -152,7 +152,7 @@ function ProgressBar({
       <div
         className='rounded-2xl border border-white/[0.07] p-5'
         style={{
-          background: 'linear-linear(135deg, #1c1a0b 0%, #141208 100%)',
+          background: 'linear-gradient(135deg, #1c1a0b 0%, #141208 100%)',
         }}
       >
         <div className='mb-3 flex items-center justify-between'>
@@ -168,7 +168,7 @@ function ProgressBar({
           <motion.div
             className='h-full rounded-full'
             style={{
-              background: `linear-linear(90deg, ${color === 'text-amber-400' ? '#f59e0b, #ea580c' : '#f97316, #ef4444'})`,
+              background: `linear-gradient(90deg, ${color === 'text-amber-400' ? '#f59e0b, #ea580c' : '#f97316, #ef4444'})`,
             }}
             initial={{ width: 0 }}
             whileInView={{ width: `${value}%` }}
@@ -268,21 +268,21 @@ export default function LandingPage() {
           className='absolute -top-32 left-1/2 h-160 w-250 -translate-x-1/2 opacity-25'
           style={{
             background:
-              'radial-linear(ellipse, #d97706 0%, #92400e 40%, transparent 70%)',
+              'radial-gradient(ellipse, #d97706 0%, #92400e 40%, transparent 70%)',
             filter: 'blur(80px)',
           }}
         />
         <div
           className='absolute bottom-0 left-0 h-100 w-125 opacity-10'
           style={{
-            background: 'radial-linear(ellipse, #b45309 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse, #b45309 0%, transparent 70%)',
             filter: 'blur(60px)',
           }}
         />
         <div
           className='absolute right-0 top-1/2 h-75 w-100 opacity-10'
           style={{
-            background: 'radial-linear(ellipse, #78350f 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse, #78350f 0%, transparent 70%)',
             filter: 'blur(60px)',
           }}
         />
@@ -290,7 +290,7 @@ export default function LandingPage() {
           className='absolute inset-0 opacity-[0.035]'
           style={{
             backgroundImage:
-              'linear-linear(rgba(255,200,80,0.5) 1px, transparent 1px), linear-linear(90deg, rgba(255,200,80,0.5) 1px, transparent 1px)',
+              'linear-gradient(rgba(255,200,80,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,200,80,0.5) 1px, transparent 1px)',
             backgroundSize: '48px 48px',
           }}
         />
@@ -351,7 +351,7 @@ export default function LandingPage() {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               className='rounded-full px-4 py-2 text-[13px] font-semibold text-white no-underline shadow-lg shadow-amber-900/30'
-              style={{ background: 'linear-linear(90deg, #f59e0b, #ea580c)' }}
+              style={{ background: 'linear-gradient(90deg, #f59e0b, #ea580c)' }}
             >
               Sign up
             </motion.a>
@@ -400,7 +400,7 @@ export default function LandingPage() {
                   className='bg-clip-text text-transparent'
                   style={{
                     backgroundImage:
-                      'linear-linear(90deg, #fbbf24 0%, #f59e0b 45%, #ea580c 100%)',
+                      'linear-gradient(90deg, #fbbf24 0%, #f59e0b 45%, #ea580c 100%)',
                   }}
                 >
                   that change everything.
@@ -437,7 +437,7 @@ export default function LandingPage() {
                   whileTap={{ scale: 0.97 }}
                   className='inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[13px] font-semibold text-[#0f0e06] no-underline shadow-xl shadow-amber-900/30'
                   style={{
-                    background: 'linear-linear(90deg, #f59e0b, #ea580c)',
+                    background: 'linear-gradient(90deg, #f59e0b, #ea580c)',
                   }}
                 >
                   Start Practicing Free
@@ -534,7 +534,7 @@ export default function LandingPage() {
               custom={1}
               className='relative overflow-hidden rounded-2xl border border-white/[0.07]'
               style={{
-                background: 'linear-linear(135deg, #1c1a0b 0%, #141208 100%)',
+                background: 'linear-gradient(135deg, #1c1a0b 0%, #141208 100%)',
               }}
             >
               {/* Amber portrait glow */}
@@ -609,7 +609,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Waveform */}
-                    <div className='mb-4 rounded-lg border border-white/5 bg-white/2 p-3'>
+                    <div className='flex justify-center mb-4 rounded-lg border border-white/5 bg-white/2 p-3'>
                       <Waveform />
                     </div>
 
@@ -619,7 +619,7 @@ export default function LandingPage() {
                       whileTap={{ scale: 0.97 }}
                       className='flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-semibold text-[#0f0e06] shadow-lg shadow-amber-900/30'
                       style={{
-                        background: 'linear-linear(90deg, #f59e0b, #ea580c)',
+                        background: 'linear-gradient(90deg, #f59e0b, #ea580c)',
                       }}
                     >
                       <FiMic size={14} />
@@ -658,7 +658,7 @@ export default function LandingPage() {
                           className='h-full rounded-full'
                           style={{
                             background:
-                              'linear-linear(90deg, #f59e0b, #ea580c)',
+                              'linear-gradient(90deg, #f59e0b, #ea580c)',
                           }}
                           initial={{ width: 0 }}
                           animate={{ width: '74%' }}
@@ -711,7 +711,7 @@ export default function LandingPage() {
                             style={{
                               background:
                                 n <= 4
-                                  ? 'linear-linear(90deg, #f59e0b, #ea580c)'
+                                  ? 'linear-gradient(90deg, #f59e0b, #ea580c)'
                                   : 'rgba(255,255,255,0.06)',
                             }}
                           />
@@ -760,7 +760,8 @@ export default function LandingPage() {
                 custom={3}
                 className='flex-1 rounded-2xl border border-white/[0.07] p-5'
                 style={{
-                  background: 'linear-linear(135deg, #1c1a0b 0%, #141208 100%)',
+                  background:
+                    'linear-gradient(135deg, #1c1a0b 0%, #141208 100%)',
                 }}
               >
                 <h3
@@ -834,7 +835,7 @@ export default function LandingPage() {
                   whileTap={{ scale: 0.97 }}
                   className='flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-semibold text-[#0f0e06] shadow-lg shadow-amber-900/20'
                   style={{
-                    background: 'linear-linear(90deg, #f59e0b, #ea580c)',
+                    background: 'linear-gradient(90deg, #f59e0b, #ea580c)',
                   }}
                 >
                   <FiZap size={14} />
@@ -850,7 +851,8 @@ export default function LandingPage() {
                 custom={4}
                 className='rounded-2xl border border-white/[0.07] p-4'
                 style={{
-                  background: 'linear-linear(135deg, #1c1a0b 0%, #141208 100%)',
+                  background:
+                    'linear-gradient(135deg, #1c1a0b 0%, #141208 100%)',
                 }}
               >
                 <div className='mb-3 flex items-center justify-between'>
@@ -873,7 +875,7 @@ export default function LandingPage() {
                           height: `${Math.min(h, 100)}%`,
                           background:
                             i < 25
-                              ? 'linear-linear(to top, #f59e0b, #fbbf24)'
+                              ? 'linear-gradient(to top, #f59e0b, #fbbf24)'
                               : 'rgba(255,255,255,0.07)',
                         }}
                       />
@@ -938,7 +940,7 @@ export default function LandingPage() {
                   className='group h-full cursor-default rounded-2xl border border-white/6 p-5 transition-colors hover:border-white/10'
                   style={{
                     background:
-                      'linear-linear(135deg, #1c1a0b 0%, #141208 100%)',
+                      'linear-gradient(135deg, #1c1a0b 0%, #141208 100%)',
                   }}
                 >
                   <div
@@ -1022,7 +1024,8 @@ export default function LandingPage() {
               <div
                 className='overflow-hidden rounded-2xl border border-white/[0.07]'
                 style={{
-                  background: 'linear-linear(135deg, #1c1a0b 0%, #141208 100%)',
+                  background:
+                    'linear-gradient(135deg, #1c1a0b 0%, #141208 100%)',
                 }}
               >
                 <div
@@ -1068,7 +1071,7 @@ export default function LandingPage() {
                     <motion.div
                       className='flex h-14 w-14 items-center justify-center rounded-full text-white'
                       style={{
-                        background: 'linear-linear(135deg, #d97706, #ea580c)',
+                        background: 'linear-gradient(135deg, #d97706, #ea580c)',
                       }}
                       animate={{
                         boxShadow: [
@@ -1112,14 +1115,14 @@ export default function LandingPage() {
             <div
               className='relative overflow-hidden rounded-3xl border border-white/[0.07] px-8 py-20 text-center'
               style={{
-                background: 'linear-linear(135deg, #1c1a0b 0%, #141208 100%)',
+                background: 'linear-gradient(135deg, #1c1a0b 0%, #141208 100%)',
               }}
             >
               <div
                 className='pointer-events-none absolute inset-0'
                 style={{
                   background:
-                    'radial-linear(ellipse at 50% 0%, rgba(180,90,10,0.22) 0%, transparent 60%)',
+                    'radial-gradient(ellipse at 50% 0%, rgba(180,90,10,0.22) 0%, transparent 60%)',
                 }}
               />
               <p className='relative mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/30'>
@@ -1142,7 +1145,7 @@ export default function LandingPage() {
                   whileTap={{ scale: 0.97 }}
                   className='rounded-full px-7 py-3.5 text-[13px] font-semibold text-[#0f0e06] no-underline shadow-xl shadow-amber-900/30'
                   style={{
-                    background: 'linear-linear(90deg, #f59e0b, #ea580c)',
+                    background: 'linear-gradient(90deg, #f59e0b, #ea580c)',
                   }}
                 >
                   Sign In
