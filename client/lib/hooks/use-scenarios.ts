@@ -6,11 +6,12 @@ import { queryKeys } from "../query/keys";
 
 export const useScenariosQuery = (
   accessToken: string | null,
-  query: ListScenariosQuery = {}
+  query: ListScenariosQuery = {},
+  enabled = true
 ) => {
   return useQuery({
     queryKey: queryKeys.scenarios.list(query),
     queryFn: () => listScenarios(query, accessToken),
-    enabled: Boolean(accessToken),
+    enabled,
   });
 };

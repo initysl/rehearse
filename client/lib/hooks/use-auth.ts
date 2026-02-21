@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ApiError } from "../api/client";
 import {
   getGoogleOAuthStartUrl,
   getMe,
@@ -16,8 +17,17 @@ import { queryKeys } from "../query/keys";
 export const useMeQuery = (accessToken: string | null) => {
   return useQuery({
     queryKey: queryKeys.auth.me(accessToken ? "authed" : "anon"),
-    queryFn: () => getMe(accessToken),
-    enabled: Boolean(accessToken),
+    queryFn: async () => {
+      try {
+        return await getMe(accessToken);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          return null;
+        }
+
+        throw error;
+      }
+    },
   });
 };
 

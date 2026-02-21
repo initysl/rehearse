@@ -1,26 +1,54 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --canvas: #f6f1e7;
+  --surface: #fffaf2;
+  --ink-strong: #1f2b24;
+  --ink-soft: #4d5f56;
+  --line-soft: rgba(31, 43, 36, 0.12);
+  --accent-coral: #e4572e;
+  --accent-teal: #0f8a7b;
+  --accent-sun: #f0b429;
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+  --font-body: 'Avenir Next', 'Segoe UI', 'Trebuchet MS', sans-serif;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink-strong);
+  --font-sans: var(--font-body);
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+}
+
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(31, 43, 36, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 43, 36, 0.06) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+.glass-panel {
+  backdrop-filter: blur(8px);
+  background: rgba(255, 250, 242, 0.84);
+  border: 1px solid var(--line-soft);
+}
+
+.hero-gradient {
+  background: linear-gradient(
+    120deg,
+    rgba(228, 87, 46, 0.18),
+    rgba(15, 138, 123, 0.16)
+  );
 }

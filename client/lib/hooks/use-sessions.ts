@@ -14,23 +14,25 @@ import { queryKeys } from "../query/keys";
 
 export const useSessionHistoryQuery = (
   accessToken: string | null,
-  query: SessionHistoryQuery = {}
+  query: SessionHistoryQuery = {},
+  enabled = true
 ) => {
   return useQuery({
     queryKey: queryKeys.sessions.history(query),
     queryFn: () => getSessionHistory(query, accessToken),
-    enabled: Boolean(accessToken),
+    enabled,
   });
 };
 
 export const useSessionDetailQuery = (
   accessToken: string | null,
-  sessionId: string | null
+  sessionId: string | null,
+  enabled = true
 ) => {
   return useQuery({
     queryKey: queryKeys.sessions.detail(sessionId || ""),
     queryFn: () => getSessionDetail(sessionId || "", accessToken),
-    enabled: Boolean(accessToken && sessionId),
+    enabled: Boolean(enabled && sessionId),
   });
 };
 
