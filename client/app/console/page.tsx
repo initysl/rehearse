@@ -1,25 +1,39 @@
-"use client";
+'use client';
 
-import { FormEvent, useMemo, useState } from "react";
-import { ApiError } from '@/lib/api/client';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
-  beginGoogleOAuth,
-  useLoginMutation,
-  useLogoutMutation,
-  useMeQuery,
-  useRefreshMutation,
-  useRegisterMutation,
-} from '@/lib/hooks/use-auth';
+  FiAlertCircle,
+  FiClock,
+  FiLogOut,
+  FiMessageSquare,
+  FiPlayCircle,
+  FiRefreshCw,
+  FiSend,
+  FiTrendingUp,
+  FiUser,
+} from 'react-icons/fi';
+import { ApiError } from '@/lib/api/client';
+import type { DifficultyLevel } from '@/lib/api/types';
 import { useAccessToken } from '@/lib/hooks/use-access-token';
+import { useLogoutMutation, useMeQuery } from '@/lib/hooks/use-auth';
+import { useSessionFeedbackQuery } from '@/lib/hooks/use-feedback';
 import { useScenariosQuery } from '@/lib/hooks/use-scenarios';
 import {
   useEndSessionMutation,
   useSendMessageStreamMutation,
+  useSessionDetailQuery,
   useSessionHistoryQuery,
   useStartSessionMutation,
 } from '@/lib/hooks/use-sessions';
-import { useSessionFeedbackQuery } from '@/lib/hooks/use-feedback';
-import type { DifficultyLevel } from '@/lib/api/types';
+
+const difficultyOptions: DifficultyLevel[] = [
+  'cooperative',
+  'neutral',
+  'resistant',
+  'hostile',
+];
 
 const formatError = (error: unknown): string => {
   if (!error) return 'Unknown error';
@@ -28,12 +42,10 @@ const formatError = (error: unknown): string => {
   return String(error);
 };
 
-export default function Home() {
+export default function ConsolePage() {
+  const router = useRouter();
   const { accessToken, setAccessToken } = useAccessToken();
 
-  const [email, setEmail] = useState('user@example.com');
-  const [password, setPassword] = useState('password123');
-  const [fullName, setFullName] = useState('Rehearse User');
   const [difficultyLevel, setDifficultyLevel] =
     useState<DifficultyLevel>('neutral');
   const [selectedScenarioId, setSelectedScenarioId] = useState('');
@@ -46,108 +58,106 @@ export default function Home() {
   const [lastActionMessage, setLastActionMessage] = useState('');
 
   const meQuery = useMeQuery(accessToken);
-  const isAuthenticated = Boolean(accessToken || meQuery.data?.user);
-  const scenariosQuery = useScenariosQuery(accessToken, {
-    limit: 10,
-    offset: 0,
-  }, isAuthenticated);
-  const historyQuery = useSessionHistoryQuery(accessToken, {
-    limit: 10,
-    offset: 0,
-  }, isAuthenticated);
+  const isAuthResolved = !meQuery.isLoading && !meQuery.isFetching;
+  const isAuthenticated = Boolean(meQuery.data?.user);
+
+  const scenariosQuery = useScenariosQuery(
+    accessToken,
+    { limit: 50, offset: 0 },
+    isAuthenticated,
+  );
+  const historyQuery = useSessionHistoryQuery(
+    accessToken,
+    { limit: 8, offset: 0 },
+    isAuthenticated,
+  );
+  const detailQuery = useSessionDetailQuery(
+    accessToken,
+    activeSessionId,
+    isAuthenticated,
+  );
   const feedbackQuery = useSessionFeedbackQuery(
     accessToken,
     feedbackSessionId,
-    isAuthenticated,
+    isAuthenticated && Boolean(feedbackSessionId),
   );
 
-  const registerMutation = useRegisterMutation(setAccessToken);
-  const loginMutation = useLoginMutation(setAccessToken);
-  const refreshMutation = useRefreshMutation(setAccessToken);
   const logoutMutation = useLogoutMutation(setAccessToken);
   const startSessionMutation = useStartSessionMutation(accessToken);
   const endSessionMutation = useEndSessionMutation(accessToken);
   const sendMessageMutation = useSendMessageStreamMutation(accessToken);
 
-  const authError =
-    registerMutation.error ||
-    loginMutation.error ||
-    refreshMutation.error ||
-    logoutMutation.error;
+  const scenarioOptions = scenariosQuery.data?.scenarios || [];
+  const historyItems = historyQuery.data?.sessions || [];
+  const messages = detailQuery.data?.messages || [];
 
   const sessionError =
     startSessionMutation.error ||
     endSessionMutation.error ||
-    sendMessageMutation.error;
+    sendMessageMutation.error ||
+    detailQuery.error;
 
-  const scenarioOptions = scenariosQuery.data?.scenarios || [];
-  const scenarioQueryError = scenariosQuery.error;
-  const effectiveScenarioId = selectedScenarioId || scenarioOptions[0]?.id || "";
+  const feedbackStatus = useMemo(() => {
+    if (!feedbackSessionId) return 'No report requested';
+    if (feedbackQuery.data?.kind === 'pending') return 'Report processing';
+    if (feedbackQuery.data?.kind === 'ready') return 'Report ready';
+    return 'Checking report status';
+  }, [feedbackQuery.data, feedbackSessionId]);
 
-  const activeUserSummary = useMemo(() => {
-    if (!meQuery.data?.user) return 'Not authenticated';
-    return `${meQuery.data.user.email || meQuery.data.user.userId} (${meQuery.data.user.role})`;
-  }, [meQuery.data]);
-
-  const handleRegister = async () => {
-    setLastActionMessage('');
-
-    try {
-      const result = await registerMutation.mutateAsync({
-        email,
-        password,
-        fullName,
-      });
-
-      if (result.requiresEmailConfirmation) {
-        setLastActionMessage(
-          'Registration successful. Check your inbox to confirm email.',
-        );
-      } else {
-        setLastActionMessage('Registration successful and authenticated.');
-      }
-    } catch {
-      // mutation state handles errors
+  useEffect(() => {
+    if (isAuthResolved && !isAuthenticated) {
+      router.replace('/auth?mode=signin');
     }
-  };
+  }, [isAuthResolved, isAuthenticated, router]);
 
-  const handleLogin = async (event: FormEvent) => {
-    event.preventDefault();
-    setLastActionMessage('');
+  useEffect(() => {
+    if (!scenarioOptions.length) return;
 
+    if (!selectedScenarioId) {
+      setSelectedScenarioId(scenarioOptions[0].id);
+      return;
+    }
+
+    const stillExists = scenarioOptions.some((s) => s.id === selectedScenarioId);
+    if (!stillExists) {
+      setSelectedScenarioId(scenarioOptions[0].id);
+    }
+  }, [selectedScenarioId, scenarioOptions]);
+
+  const handleLogout = async () => {
     try {
-      await loginMutation.mutateAsync({ email, password });
-      setLastActionMessage('Login successful.');
-    } catch {
-      // mutation state handles errors
+      await logoutMutation.mutateAsync();
+    } finally {
+      router.replace('/auth?mode=signin');
     }
   };
 
   const handleStartSession = async () => {
-    if (!effectiveScenarioId) {
-      setLastActionMessage('Select a scenario before starting a session.');
+    if (!selectedScenarioId) {
+      setLastActionMessage('No scenario selected yet.');
       return;
     }
 
     setLastActionMessage('');
+    setAssistantStream('');
 
     try {
       const result = await startSessionMutation.mutateAsync({
-        scenarioId: effectiveScenarioId,
+        scenarioId: selectedScenarioId,
         difficultyLevel,
       });
+
       setActiveSessionId(result.session.id);
       setFeedbackSessionId(null);
-      setAssistantStream('');
-      setLastActionMessage(`Session started: ${result.session.id}`);
+      setLastActionMessage('Session started.');
     } catch {
-      // mutation state handles errors
+      // handled by mutation state
     }
   };
 
   const handleEndSession = async () => {
     if (!activeSessionId) {
-      setLastActionMessage('No active session selected.');
+      setLastActionMessage('No active session to end.');
       return;
     }
 
@@ -159,9 +169,9 @@ export default function Home() {
         payload: { status: 'completed' },
       });
       setFeedbackSessionId(result.session.id);
-      setLastActionMessage('Session ended. Feedback polling started.');
+      setLastActionMessage('Session ended. Feedback generation started.');
     } catch {
-      // mutation state handles errors
+      // handled by mutation state
     }
   };
 
@@ -169,238 +179,310 @@ export default function Home() {
     event.preventDefault();
 
     if (!activeSessionId || !messageInput.trim()) {
-      setLastActionMessage('Set an active session and message content first.');
+      setLastActionMessage('Start a session and type a message first.');
       return;
     }
 
     setAssistantStream('');
-    setLastActionMessage('');
 
     try {
       await sendMessageMutation.mutateAsync({
         sessionId: activeSessionId,
-        content: messageInput,
+        content: messageInput.trim(),
         onToken: (token) => {
           setAssistantStream((prev) => prev + token);
         },
       });
       setMessageInput('');
     } catch {
-      // mutation state handles errors
+      // handled by mutation state
     }
   };
 
-  return (
-    <main className='mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 p-6'>
-      <section className='rounded-xl border border-black/10 p-4'>
-        <h1 className='text-2xl font-semibold'>Rehearse Integration Console</h1>
-        <p className='text-sm text-black/60'>
-          API base:{' '}
-          <code>
-            {process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'}
-          </code>
-        </p>
-      </section>
-
-      <section className='rounded-xl border border-black/10 p-4'>
-        <h2 className='mb-3 text-lg font-semibold'>Auth</h2>
-        <form className='grid gap-2 sm:grid-cols-2' onSubmit={handleLogin}>
-          <input
-            className='rounded border border-black/20 px-3 py-2'
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder='Email'
-            type='email'
-          />
-          <input
-            className='rounded border border-black/20 px-3 py-2'
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder='Password'
-            type='password'
-          />
-          <input
-            className='rounded border border-black/20 px-3 py-2 sm:col-span-2'
-            value={fullName}
-            onChange={(event) => setFullName(event.target.value)}
-            placeholder='Full name (for registration)'
-          />
-          <div className='flex flex-wrap gap-2 sm:col-span-2'>
-            <button
-              className='rounded bg-black px-3 py-2 text-white'
-              type='submit'
-            >
-              Login
-            </button>
-            <button
-              className='rounded border border-black/30 px-3 py-2'
-              type='button'
-              onClick={() => {
-                void handleRegister();
-              }}
-            >
-              Register
-            </button>
-            <button
-              className='rounded border border-black/30 px-3 py-2'
-              type='button'
-              onClick={() => refreshMutation.mutate()}
-            >
-              Refresh Session
-            </button>
-            <button
-              className='rounded border border-black/30 px-3 py-2'
-              type='button'
-              onClick={() => logoutMutation.mutate()}
-            >
-              Logout
-            </button>
-            <button
-              className='rounded border border-black/30 px-3 py-2'
-              type='button'
-              onClick={() => beginGoogleOAuth('/')}
-            >
-              Continue with Google
-            </button>
-          </div>
-        </form>
-        <p className='mt-2 text-sm'>Current user: {activeUserSummary}</p>
-        <p className='mt-1 text-xs text-black/60 break-all'>
-          Access token: {accessToken || 'none'}
-        </p>
-        {authError ? (
-          <p className='mt-2 text-sm text-red-700'>
-            Auth error: {formatError(authError)}
-          </p>
-        ) : null}
-      </section>
-
-      <section className='rounded-xl border border-black/10 p-4'>
-        <h2 className='mb-3 text-lg font-semibold'>Scenarios & Sessions</h2>
-        <div className='mb-3 flex flex-wrap items-center gap-2'>
-          <select
-            className='rounded border border-black/20 px-3 py-2'
-            value={effectiveScenarioId}
-            onChange={(event) => setSelectedScenarioId(event.target.value)}
-          >
-            <option value=''>Select scenario</option>
-            {scenarioOptions.map((scenario) => (
-              <option key={scenario.id} value={scenario.id}>
-                {scenario.title} ({scenario.category})
-              </option>
-            ))}
-          </select>
-          <select
-            className='rounded border border-black/20 px-3 py-2'
-            value={difficultyLevel}
-            onChange={(event) =>
-              setDifficultyLevel(event.target.value as DifficultyLevel)
-            }
-          >
-            <option value='cooperative'>cooperative</option>
-            <option value='neutral'>neutral</option>
-            <option value='resistant'>resistant</option>
-            <option value='hostile'>hostile</option>
-          </select>
-          <button
-            className='rounded bg-black px-3 py-2 text-white'
-            type='button'
-            onClick={handleStartSession}
-          >
-            Start Session
-          </button>
-          <button
-            className='rounded border border-black/30 px-3 py-2'
-            type='button'
-            onClick={handleEndSession}
-          >
-            End Session
-          </button>
+  if (!isAuthResolved) {
+    return (
+      <main className='relative z-10 flex min-h-screen items-center justify-center px-6 text-white'>
+        <div className='rounded-2xl border border-white/10 bg-black/35 px-6 py-5 text-sm text-white/80 backdrop-blur-xl'>
+          Checking your session...
         </div>
-        {scenariosQuery.isFetching ? (
-          <p className='mb-3 text-sm text-black/60'>Loading scenarios...</p>
-        ) : null}
-        {scenarioQueryError ? (
-          <p className='mb-3 text-sm text-red-700'>
-            Scenarios error: {formatError(scenarioQueryError)}
-          </p>
-        ) : null}
-        {!scenariosQuery.isFetching && !scenarioQueryError && isAuthenticated && scenarioOptions.length === 0 ? (
-          <p className='mb-3 text-sm text-amber-700'>
-            No scenarios found. Seed defaults with <code>cd server && npm run seed:scenarios</code>.
-          </p>
-        ) : null}
+      </main>
+    );
+  }
 
-        <form className='mb-3 flex flex-col gap-2' onSubmit={handleSendMessage}>
-          <textarea
-            className='min-h-20 rounded border border-black/20 px-3 py-2'
-            value={messageInput}
-            onChange={(event) => setMessageInput(event.target.value)}
-            placeholder='Send message to POST /sessions/:id/message (SSE).'
-          />
-          <button
-            className='w-fit rounded border border-black/30 px-3 py-2'
-            type='submit'
-          >
-            Send Message
-          </button>
-        </form>
+  if (!isAuthenticated) {
+    return (
+      <main className='relative z-10 flex min-h-screen items-center justify-center px-6 text-white'>
+        <div className='rounded-2xl border border-white/10 bg-black/35 px-6 py-5 text-sm text-white/80 backdrop-blur-xl'>
+          Redirecting to sign in...
+        </div>
+      </main>
+    );
+  }
 
-        <p className='text-sm'>Active session: {activeSessionId || 'none'}</p>
-        <p className='text-sm'>
-          Feedback session: {feedbackSessionId || 'none'}
-        </p>
-
-        <div className='mt-3 grid gap-3 sm:grid-cols-2'>
-          <div className='rounded border border-black/10 p-3'>
-            <h3 className='font-medium'>Assistant Stream Output</h3>
-            <pre className='mt-2 whitespace-pre-wrap text-xs'>
-              {assistantStream || '(empty)'}
-            </pre>
+  return (
+    <main className='relative z-10 min-h-screen px-4 py-6 text-white sm:px-6'>
+      <div className='mx-auto max-w-7xl space-y-5'>
+        <header className='flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/15 bg-black/30 p-4 backdrop-blur-xl'>
+          <div>
+            <p className='text-xs uppercase tracking-[0.14em] text-white/55'>
+              Rehearse Console
+            </p>
+            <p className='mt-1 inline-flex items-center gap-2 text-sm text-white/85'>
+              <FiUser className='text-amber-300' />
+              {meQuery.data?.user?.email || meQuery.data?.user?.userId}
+            </p>
           </div>
 
-          <div className='rounded border border-black/10 p-3'>
-            <h3 className='font-medium'>Feedback Polling</h3>
-            {feedbackQuery.data?.kind === 'pending' ? (
-              <p className='mt-2 text-sm'>
-                Pending ({feedbackQuery.data.data.queueStatus.state}) - polling
-                every 3s
+          <div className='flex flex-wrap items-center gap-2'>
+            <Link
+              href='/'
+              className='rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/75 no-underline transition hover:text-white'
+            >
+              Landing
+            </Link>
+            <button
+              type='button'
+              onClick={handleLogout}
+              className='inline-flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-500 to-orange-600 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#120f07]'
+            >
+              <FiLogOut size={13} />
+              Sign out
+            </button>
+          </div>
+        </header>
+
+        <section className='grid gap-4 xl:grid-cols-[1.05fr_0.95fr]'>
+          <article className='rounded-2xl border border-white/15 bg-black/30 p-4 backdrop-blur-xl'>
+            <div className='mb-4 flex flex-wrap items-center justify-between gap-2'>
+              <h2 className='text-lg font-semibold'>Session Setup</h2>
+              <button
+                type='button'
+                onClick={() => void scenariosQuery.refetch()}
+                className='inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/75'
+              >
+                <FiRefreshCw size={12} />
+                Refresh scenarios
+              </button>
+            </div>
+
+            <div className='grid gap-3 sm:grid-cols-2'>
+              <label className='block'>
+                <span className='mb-1.5 inline-block text-xs uppercase tracking-[0.08em] text-white/50'>
+                  Scenario
+                </span>
+                <select
+                  className='w-full rounded-xl border border-white/15 bg-[#141414] px-3 py-3 text-sm text-white outline-none focus:border-amber-400/45'
+                  value={selectedScenarioId}
+                  onChange={(event) => setSelectedScenarioId(event.target.value)}
+                >
+                  <option value=''>
+                    {scenariosQuery.isLoading
+                      ? 'Loading scenarios...'
+                      : 'Select scenario'}
+                  </option>
+                  {scenarioOptions.map((scenario) => (
+                    <option key={scenario.id} value={scenario.id}>
+                      {scenario.title} ({scenario.category})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className='block'>
+                <span className='mb-1.5 inline-block text-xs uppercase tracking-[0.08em] text-white/50'>
+                  Difficulty
+                </span>
+                <select
+                  className='w-full rounded-xl border border-white/15 bg-[#141414] px-3 py-3 text-sm text-white outline-none focus:border-amber-400/45'
+                  value={difficultyLevel}
+                  onChange={(event) =>
+                    setDifficultyLevel(event.target.value as DifficultyLevel)
+                  }
+                >
+                  {difficultyOptions.map((level) => (
+                    <option key={level} value={level}>
+                      {level}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {scenarioOptions.length === 0 && !scenariosQuery.isLoading ? (
+              <p className='mt-3 text-xs text-amber-200'>
+                No scenarios available yet. If your DB is empty, run
+                `npm run seed:scenarios` in `server/` and refresh.
               </p>
             ) : null}
-            {feedbackQuery.data?.kind === 'ready' ? (
-              <pre className='mt-2 whitespace-pre-wrap text-xs'>
-                {JSON.stringify(
-                  feedbackQuery.data.data.feedback.fullFeedback,
-                  null,
-                  2,
-                )}
-              </pre>
-            ) : null}
-            {!feedbackQuery.data ? (
-              <p className='mt-2 text-sm'>No feedback request yet.</p>
-            ) : null}
-          </div>
-        </div>
 
-        <div className='mt-3 rounded border border-black/10 p-3'>
-          <h3 className='font-medium'>Recent Sessions</h3>
-          <pre className='mt-2 overflow-x-auto text-xs'>
-            {JSON.stringify(historyQuery.data?.sessions || [], null, 2)}
-          </pre>
-        </div>
+            {scenariosQuery.error ? (
+              <p className='mt-3 text-xs text-rose-300'>
+                Scenario fetch error: {formatError(scenariosQuery.error)}
+              </p>
+            ) : null}
+
+            <div className='mt-4 flex flex-wrap gap-2'>
+              <button
+                type='button'
+                onClick={handleStartSession}
+                disabled={startSessionMutation.isPending || !selectedScenarioId}
+                className='inline-flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-500 to-orange-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#120f07] disabled:cursor-not-allowed disabled:opacity-60'
+              >
+                <FiPlayCircle size={13} />
+                {startSessionMutation.isPending ? 'Starting...' : 'Start Session'}
+              </button>
+
+              <button
+                type='button'
+                onClick={handleEndSession}
+                disabled={endSessionMutation.isPending || !activeSessionId}
+                className='rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/75 disabled:cursor-not-allowed disabled:opacity-60'
+              >
+                {endSessionMutation.isPending ? 'Ending...' : 'End Session'}
+              </button>
+            </div>
+          </article>
+
+          <article className='rounded-2xl border border-white/15 bg-black/30 p-4 backdrop-blur-xl'>
+            <h2 className='text-lg font-semibold'>Feedback</h2>
+            <p className='mt-1 text-sm text-white/60'>{feedbackStatus}</p>
+            <div className='mt-3 rounded-xl border border-white/15 bg-[#141414] p-3 text-sm text-white/75'>
+              {feedbackQuery.data?.kind === 'pending' ? (
+                <p>
+                  Processing ({feedbackQuery.data.data.queueStatus.state}) and
+                  checking automatically.
+                </p>
+              ) : null}
+
+              {feedbackQuery.data?.kind === 'ready' ? (
+                <div className='space-y-2'>
+                  <p>
+                    Confidence score:{' '}
+                    <span className='font-semibold text-amber-300'>
+                      {feedbackQuery.data.data.feedback.confidenceScore}
+                    </span>
+                  </p>
+                  <p className='text-xs text-white/55'>
+                    {feedbackQuery.data.data.feedback.fullFeedback.overallSummary ||
+                      'Feedback generated successfully.'}
+                  </p>
+                </div>
+              ) : null}
+
+              {!feedbackQuery.data ? (
+                <p>No feedback yet. End a session to generate one.</p>
+              ) : null}
+            </div>
+          </article>
+        </section>
+
+        <section className='grid gap-4 xl:grid-cols-[1.2fr_0.8fr]'>
+          <article className='rounded-2xl border border-white/15 bg-black/30 p-4 backdrop-blur-xl'>
+            <div className='mb-3 flex items-center justify-between'>
+              <h2 className='text-lg font-semibold'>Live Conversation</h2>
+              <p className='text-xs uppercase tracking-wider text-white/50'>
+                {activeSessionId ? 'Active' : 'Idle'}
+              </p>
+            </div>
+
+            <div className='max-h-72 space-y-2 overflow-auto rounded-xl border border-white/15 bg-[#141414] p-3'>
+              {messages.length ? (
+                messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`max-w-[90%] rounded-xl px-3 py-2 text-sm ${
+                      message.role === 'user'
+                        ? 'ml-auto border border-amber-400/25 bg-amber-400/10 text-amber-100'
+                        : 'border border-white/15 bg-white/5 text-white/85'
+                    }`}
+                  >
+                    {message.content}
+                  </div>
+                ))
+              ) : (
+                <p className='text-sm text-white/45'>
+                  No messages yet. Start a session and send your first message.
+                </p>
+              )}
+
+              {assistantStream ? (
+                <div className='max-w-[90%] rounded-xl border border-emerald-300/25 bg-emerald-300/10 px-3 py-2 text-sm text-emerald-100'>
+                  {assistantStream}
+                </div>
+              ) : null}
+            </div>
+
+            <form className='mt-3 flex flex-col gap-2' onSubmit={handleSendMessage}>
+              <textarea
+                className='min-h-24 w-full rounded-xl border border-white/15 bg-[#141414] px-3 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-amber-400/45'
+                placeholder='Type your next message...'
+                value={messageInput}
+                onChange={(event) => setMessageInput(event.target.value)}
+              />
+
+              <button
+                type='submit'
+                disabled={sendMessageMutation.isPending || !activeSessionId}
+                className='inline-flex w-fit items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/80 disabled:cursor-not-allowed disabled:opacity-60'
+              >
+                <FiSend size={12} />
+                {sendMessageMutation.isPending ? 'Sending...' : 'Send Message'}
+              </button>
+            </form>
+          </article>
+
+          <article className='rounded-2xl border border-white/15 bg-black/30 p-4 backdrop-blur-xl'>
+            <h2 className='text-lg font-semibold'>Recent Sessions</h2>
+            <div className='mt-3 space-y-2'>
+              {historyItems.length ? (
+                historyItems.map((session) => (
+                  <button
+                    key={session.id}
+                    type='button'
+                    onClick={() => {
+                      setActiveSessionId(session.id);
+                      setFeedbackSessionId(session.id);
+                    }}
+                    className='flex w-full items-center justify-between rounded-xl border border-white/15 bg-[#141414] px-3 py-2 text-left transition hover:border-amber-400/35'
+                  >
+                    <div>
+                      <p className='text-sm text-white'>{session.scenarioTitle}</p>
+                      <p className='text-xs uppercase tracking-wider text-white/45'>
+                        {session.scenarioCategory} · {session.status}
+                      </p>
+                    </div>
+                    <FiTrendingUp className='text-white/40' size={14} />
+                  </button>
+                ))
+              ) : (
+                <p className='rounded-xl border border-white/15 bg-[#141414] px-3 py-2 text-sm text-white/45'>
+                  No recent sessions yet.
+                </p>
+              )}
+            </div>
+          </article>
+        </section>
+
+        {lastActionMessage ? (
+          <section className='inline-flex w-fit items-center gap-2 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200'>
+            <FiMessageSquare className='text-emerald-300' />
+            {lastActionMessage}
+          </section>
+        ) : null}
 
         {sessionError ? (
-          <p className='mt-2 text-sm text-red-700'>
-            Session error: {formatError(sessionError)}
-          </p>
+          <section className='inline-flex w-fit items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200'>
+            <FiAlertCircle className='text-rose-300' />
+            {formatError(sessionError)}
+          </section>
         ) : null}
-      </section>
 
-      {lastActionMessage ? (
-        <section className='rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm'>
-          {lastActionMessage}
+        <section className='inline-flex items-center gap-2 rounded-xl border border-white/15 bg-black/25 px-3 py-2 text-xs text-white/65'>
+          <FiClock />
+          Scenario count: {scenarioOptions.length}
+          {scenariosQuery.isFetching ? ' • refreshing...' : ''}
         </section>
-      ) : null}
+      </div>
     </main>
   );
 }

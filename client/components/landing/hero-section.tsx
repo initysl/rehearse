@@ -90,7 +90,7 @@ export function HeroSection() {
                   background: 'linear-gradient(90deg, #f59e0b, #ea580c)',
                 }}
               >
-                Start Practicing Free
+                Start practicing
                 <FiArrowRight size={14} />
               </motion.a>
               <motion.a
@@ -262,7 +262,7 @@ export function HeroSection() {
                     }}
                   >
                     <FiMic size={14} />
-                    Start Practice Session
+                    Start practice session
                   </motion.button>
                 </div>
 

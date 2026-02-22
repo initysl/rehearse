@@ -193,9 +193,9 @@ const seed = async () => {
         created_by
       )
       SELECT
-        $1,
-        $2,
-        $3,
+        $1::varchar,
+        $2::varchar,
+        $3::text,
         $4::jsonb,
         $5::jsonb,
         FALSE,
@@ -203,7 +203,7 @@ const seed = async () => {
       WHERE NOT EXISTS (
         SELECT 1
         FROM public.scenarios
-        WHERE title = $1
+        WHERE title = $6::varchar
           AND is_custom = FALSE
       )`,
       [
@@ -212,6 +212,7 @@ const seed = async () => {
         scenario.description,
         JSON.stringify(scenario.characterProfile),
         JSON.stringify(scenario.difficultyVariants),
+        scenario.title,
       ]
     );
   }

@@ -10,7 +10,7 @@ export const useScenariosQuery = (
   enabled = true
 ) => {
   return useQuery({
-    queryKey: queryKeys.scenarios.list(query),
+    queryKey: [...queryKeys.scenarios.list(query), accessToken ? "authed" : "anon"],
     queryFn: () => listScenarios(query, accessToken),
     enabled,
   });
