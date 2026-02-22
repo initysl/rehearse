@@ -1,4 +1,3 @@
-// ── Auth ──────────────────────────────────────────────────────
 export interface JwtPayload {
   userId: string;
   email: string | null;
@@ -7,19 +6,17 @@ export interface JwtPayload {
   aud: string | null;
 }
 
-// ── User ──────────────────────────────────────────────────────
 export interface User {
   id: string;
   email: string;
-  subscriptionTier: "free" | "pro" | "enterprise";
+  subscriptionTier: 'free' | 'pro' | 'enterprise';
   createdAt: Date;
 }
 
-// ── Scenario ──────────────────────────────────────────────────
 export interface Scenario {
   id: string;
   title: string;
-  category: "work" | "health" | "family" | "social" | "financial" | "legal";
+  category: 'work' | 'health' | 'family' | 'social' | 'financial' | 'legal';
   description: string;
   characterProfile: CharacterProfile;
   difficultyVariants: DifficultyVariant[];
@@ -34,35 +31,31 @@ export interface CharacterProfile {
   goals: string[];
   emotionalState: string;
 }
-
 export interface DifficultyVariant {
-  level: "cooperative" | "neutral" | "resistant" | "hostile";
+  level: 'cooperative' | 'neutral' | 'resistant' | 'hostile';
   behaviorModifier: string;
 }
 
-// ── Session ───────────────────────────────────────────────────
 export interface Session {
   id: string;
   userId: string;
   scenarioId: string;
   customContext?: string;
-  difficultyLevel: "cooperative" | "neutral" | "resistant" | "hostile";
-  status: "active" | "completed" | "abandoned";
+  difficultyLevel: 'cooperative' | 'neutral' | 'resistant' | 'hostile';
+  status: 'active' | 'completed' | 'abandoned';
   startedAt: Date;
   endedAt?: Date;
 }
 
-// ── Message ───────────────────────────────────────────────────
 export interface Message {
   id: string;
   sessionId: string;
-  role: "user" | "assistant" | "system";
+  role: 'user' | 'assistant' | 'system';
   content: string;
   tokenCount?: number;
   createdAt: Date;
 }
 
-// ── Feedback ──────────────────────────────────────────────────
 export interface FeedbackResult {
   goalAchieved: boolean;
   goalAnalysis: string;
@@ -82,7 +75,6 @@ export interface FeedbackResult {
   confidenceScore: number;
 }
 
-// ── Express augmentation ──────────────────────────────────────
 declare global {
   namespace Express {
     interface Request {

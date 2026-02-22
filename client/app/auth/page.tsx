@@ -24,7 +24,6 @@ import {
   useMeQuery,
   useRegisterMutation,
 } from '@/lib/hooks/use-auth';
-import { AiFillGoogleSquare } from 'react-icons/ai';
 import { FaGoogle } from 'react-icons/fa';
 
 type AuthMode = 'signin' | 'signup';
@@ -407,7 +406,8 @@ export default function AuthPage() {
               {isSubmitting ? (
                 <>
                   <FiLoader
-                    className='h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#0f0e06]/30 border-t-[#0f0e06]'
+                    size={20}
+                    className='animate-spin rounded-full border-2 text-white border-[#0f0e06]/30 border-t-[#0f0e06]'
                     aria-hidden='true'
                   />
                 </>
@@ -439,7 +439,7 @@ export default function AuthPage() {
           {googleError ? (
             <p
               role='alert'
-              className='mt-3 inline-flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200'
+              className='mt-3 inline-flex justify-center items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200'
             >
               <FiAlertCircle className='mt-0.5 shrink-0' aria-hidden='true' />
               {googleError}
@@ -459,7 +459,7 @@ export default function AuthPage() {
           {authError ? (
             <p
               role='alert'
-              className='mt-4 inline-flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200'
+              className='mt-4 inline-flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200'
             >
               <FiAlertCircle className='mt-0.5 shrink-0' aria-hidden='true' />
               {formatError(authError)}
