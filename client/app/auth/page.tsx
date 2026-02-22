@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { motion } from 'framer-motion';
 import {
   FiAlertCircle,
   FiArrowRight,
@@ -283,26 +284,48 @@ export default function AuthPage() {
               role='tab'
               aria-selected={mode === 'signin'}
               onClick={() => setMode('signin')}
-              className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest transition ${
+              className={`relative rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-colors duration-200 ${
                 mode === 'signin'
-                  ? 'bg-white text-[#0f0e06]'
+                  ? 'text-[#0f0e06]'
                   : 'text-white/55 hover:text-white/80'
               }`}
             >
-              Sign in
+              {mode === 'signin' ? (
+                <motion.span
+                  layoutId='auth-mode-pill'
+                  className='absolute inset-0 rounded-full bg-white'
+                  transition={{
+                    type: 'spring',
+                    stiffness: 420,
+                    damping: 34,
+                  }}
+                />
+              ) : null}
+              <span className='relative z-10'>Sign in</span>
             </button>
             <button
               type='button'
               role='tab'
               aria-selected={mode === 'signup'}
               onClick={() => setMode('signup')}
-              className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest transition ${
+              className={`relative rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-colors duration-200 ${
                 mode === 'signup'
-                  ? 'bg-white text-[#0f0e06]'
+                  ? 'text-[#0f0e06]'
                   : 'text-white/55 hover:text-white/80'
               }`}
             >
-              Sign up
+              {mode === 'signup' ? (
+                <motion.span
+                  layoutId='auth-mode-pill'
+                  className='absolute inset-0 rounded-full bg-white'
+                  transition={{
+                    type: 'spring',
+                    stiffness: 420,
+                    damping: 34,
+                  }}
+                />
+              ) : null}
+              <span className='relative z-10'>Sign up</span>
             </button>
           </div>
 
