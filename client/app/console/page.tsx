@@ -2,11 +2,23 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiAlertCircle, FiCheckCircle, FiClock, FiZap } from 'react-icons/fi';
+import {
+  FiAlertCircle,
+  FiCheckCircle,
+  FiClock,
+  FiLoader,
+  FiZap,
+} from 'react-icons/fi';
 import { ApiError } from '@/lib/api/client';
-import type { CreateCustomScenarioInput, DifficultyLevel } from '@/lib/api/types';
+import type {
+  CreateCustomScenarioInput,
+  DifficultyLevel,
+} from '@/lib/api/types';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
-import type { DashboardView, ScenarioCategoryFilter } from '@/components/dashboard/types';
+import type {
+  DashboardView,
+  ScenarioCategoryFilter,
+} from '@/components/dashboard/types';
 import { ConversationView } from '@/components/dashboard/views/conversation-view';
 import { FeedbackView } from '@/components/dashboard/views/feedback-view';
 import { ProfileHistoryView } from '@/components/dashboard/views/profile-history-view';
@@ -98,20 +110,22 @@ export default function ConsolePage() {
   const createScenarioMutation = useCreateScenarioMutation(accessToken);
   const updateScenarioMutation = useUpdateScenarioMutation(accessToken);
   const deleteScenarioMutation = useDeleteScenarioMutation(accessToken);
-  const clearSessionHistoryMutation = useClearSessionHistoryMutation(accessToken);
+  const clearSessionHistoryMutation =
+    useClearSessionHistoryMutation(accessToken);
 
   const scenarioOptions = scenariosQuery.data?.scenarios || [];
   const historyItems = historyQuery.data?.sessions || [];
   const messages = detailQuery.data?.messages || [];
   const selectedScenario =
-    scenarioOptions.find((scenario) => scenario.id === selectedScenarioId) || null;
+    scenarioOptions.find((scenario) => scenario.id === selectedScenarioId) ||
+    null;
   const currentSessionStatus = detailQuery.data?.session.status;
   const isVoiceEnabled = Boolean(
     isAuthenticated &&
-      activeSessionId &&
-      activeView === 'conversation' &&
-      currentSessionStatus !== 'completed' &&
-      currentSessionStatus !== 'abandoned',
+    activeSessionId &&
+    activeView === 'conversation' &&
+    currentSessionStatus !== 'completed' &&
+    currentSessionStatus !== 'abandoned',
   );
 
   const voiceSession = useVoiceSession({
@@ -139,20 +153,21 @@ export default function ConsolePage() {
       if (scenarioCategory !== 'all' && scenario.category !== scenarioCategory)
         return false;
       if (scenarioSearch.trim()) {
-        const haystack = `${scenario.title} ${scenario.description}`.toLowerCase();
-        if (!haystack.includes(scenarioSearch.trim().toLowerCase())) return false;
+        const haystack =
+          `${scenario.title} ${scenario.description}`.toLowerCase();
+        if (!haystack.includes(scenarioSearch.trim().toLowerCase()))
+          return false;
       }
       return true;
     });
   }, [scenarioCategory, scenarioCustomOnly, scenarioOptions, scenarioSearch]);
 
   const sessionError =
-    startSessionMutation.error ||
-    endSessionMutation.error ||
-    detailQuery.error;
+    startSessionMutation.error || endSessionMutation.error || detailQuery.error;
 
   const completedSessions = useMemo(
-    () => historyItems.filter((session) => session.status === 'completed').length,
+    () =>
+      historyItems.filter((session) => session.status === 'completed').length,
     [historyItems],
   );
 
@@ -182,7 +197,9 @@ export default function ConsolePage() {
       return;
     }
 
-    const stillExists = scenarioOptions.some((s) => s.id === selectedScenarioId);
+    const stillExists = scenarioOptions.some(
+      (s) => s.id === selectedScenarioId,
+    );
     if (!stillExists) {
       setSelectedScenarioId(scenarioOptions[0].id);
     }
@@ -291,10 +308,14 @@ export default function ConsolePage() {
     void scenariosQuery.refetch();
   };
 
-  const handleDeleteCustomScenario = async (scenarioId: string): Promise<void> => {
+  const handleDeleteCustomScenario = async (
+    scenarioId: string,
+  ): Promise<void> => {
     await deleteScenarioMutation.mutateAsync(scenarioId);
     if (selectedScenarioId === scenarioId) {
-      const fallback = filteredScenarios.find((scenario) => scenario.id !== scenarioId);
+      const fallback = filteredScenarios.find(
+        (scenario) => scenario.id !== scenarioId,
+      );
       setSelectedScenarioId(fallback?.id || '');
     }
     setLastActionMessage('Custom scenario deleted.');
@@ -329,7 +350,9 @@ export default function ConsolePage() {
           if (result.deletedCount > 0) {
             setFeedbackSessionId(null);
           }
-          setLastActionMessage(`Cleared ${result.deletedCount} recent sessions.`);
+          setLastActionMessage(
+            `Cleared ${result.deletedCount} recent sessions.`,
+          );
         } catch {
           setLastActionMessage('Could not clear recent sessions right now.');
         }
@@ -354,7 +377,9 @@ export default function ConsolePage() {
         ? `Delete scenario error: ${formatError(deleteScenarioMutation.error)}`
         : undefined;
 
-  const sessionErrorMessage = sessionError ? formatError(sessionError) : undefined;
+  const sessionErrorMessage = sessionError
+    ? formatError(sessionError)
+    : undefined;
 
   const scenarioBrowserView = (
     <ScenarioBrowserView
@@ -418,7 +443,10 @@ export default function ConsolePage() {
   );
 
   const feedbackView = (
-    <FeedbackView feedbackStatus={feedbackStatus} feedback={feedbackQuery.data} />
+    <FeedbackView
+      feedbackStatus={feedbackStatus}
+      feedback={feedbackQuery.data}
+    />
   );
 
   const profileHistoryView = (
@@ -453,9 +481,11 @@ export default function ConsolePage() {
   if (!isAuthResolved) {
     return (
       <main className='relative z-10 flex min-h-screen items-center justify-center px-6 text-white'>
-        <div className='rounded-2xl border border-white/10 bg-black/35 px-6 py-5 text-sm text-white/80 backdrop-blur-xl'>
-          Checking your session...
-        </div>
+        <FiLoader
+          className='animate-spin rounded-full border-2 text-white border-white border-t-[#e77212]'
+          aria-hidden='true'
+          size={40}
+        />
       </main>
     );
   }

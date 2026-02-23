@@ -15,7 +15,7 @@ const socialLinks = [
 export function LandingFooter() {
   return (
     <footer className='border-t border-white/5 px-6 py-8'>
-      <div className='mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-5 text-white'>
+      <div className='mx-auto flex flex-wrap items-center justify-between gap-5 text-white'>
         <div className='flex flex-wrap gap-6'>
           {legalLinks.map((item) => (
             <Link
@@ -36,7 +36,7 @@ export function LandingFooter() {
               target='_blank'
               rel='noreferrer noopener'
               aria-label={social.label}
-              className='flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.07] bg-white/2 text-[13px] text-white/25 no-underline transition hover:border-white/12 hover:text-white/55'
+              className='flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.07] bg-white/2 text-[13px] no-underline transition hover:border-white/12 hover:text-white/55'
             >
               <social.icon />
             </a>
