@@ -25,6 +25,7 @@ export interface AuthResponse {
 export interface MeUser {
   userId: string;
   email: string | null;
+  fullName?: string | null;
   role: string;
   emailConfirmed: boolean;
   aud: string | null;

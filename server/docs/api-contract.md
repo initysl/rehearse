@@ -17,6 +17,7 @@ Base URL (local): `http://localhost:5000`
   - OAuth callback endpoint (set in Supabase redirect URLs).
 - `POST /auth/logout`
 - `GET /auth/me`
+  - Response user includes: `userId`, `email`, `role`, `emailConfirmed`, `aud`, `fullName`.
 
 ## Scenarios (Protected)
 

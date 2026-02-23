@@ -10,6 +10,8 @@ import { SendSessionMessageInput } from "./messages.types";
 interface SessionContextRow {
   session_id: string;
   user_id: string;
+  user_email: string | null;
+  user_full_name: string | null;
   scenario_id: string;
   difficulty_level: "cooperative" | "neutral" | "resistant" | "hostile";
   custom_context: string | null;
@@ -146,6 +148,8 @@ const getSessionContext = async (
     `SELECT
       s.id AS session_id,
       s.user_id,
+      p.email AS user_email,
+      p.full_name AS user_full_name,
       s.scenario_id,
       s.difficulty_level,
       s.custom_context,
@@ -159,6 +163,7 @@ const getSessionContext = async (
       sc.created_by AS scenario_created_by
      FROM public.sessions s
      JOIN public.scenarios sc ON sc.id = s.scenario_id
+     LEFT JOIN public.profiles p ON p.id = s.user_id
      WHERE s.id = $1
        AND s.user_id = $2
      LIMIT 1`,
@@ -166,6 +171,38 @@ const getSessionContext = async (
   );
 
   return result.rows[0] || null;
+};
+
+const toUserNameContext = (
+  fullName: string | null,
+  email: string | null
+): { fullName?: string; firstName?: string; lastName?: string } => {
+  const normalizedFullName = fullName?.replace(/\s+/g, " ").trim();
+  if (normalizedFullName) {
+    const nameParts = normalizedFullName.split(" ").filter(Boolean);
+    return {
+      fullName: normalizedFullName,
+      firstName: nameParts[0],
+      lastName: nameParts.length > 1 ? nameParts[nameParts.length - 1] : undefined,
+    };
+  }
+
+  const emailLocalPart = email?.split("@")[0]?.replace(/[._-]+/g, " ").trim();
+  if (!emailLocalPart) return {};
+
+  const fallbackParts = emailLocalPart
+    .split(" ")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase());
+
+  if (!fallbackParts.length) return {};
+
+  return {
+    fullName: fallbackParts.join(" "),
+    firstName: fallbackParts[0],
+    lastName: fallbackParts.length > 1 ? fallbackParts[fallbackParts.length - 1] : undefined,
+  };
 };
 
 const insertMessage = async (
@@ -254,10 +291,15 @@ export const streamSessionMessage = async ({
 
   const promptHistory = manageContext(history);
   const scenario = toScenario(context);
+  const userNameContext = toUserNameContext(
+    context.user_full_name,
+    context.user_email
+  );
   const systemPrompt = buildCharacterPrompt(
     scenario,
     context.difficulty_level,
-    context.custom_context || undefined
+    context.custom_context || undefined,
+    userNameContext
   );
   const llmMessages = buildMessages(systemPrompt, promptHistory);
 
@@ -314,10 +356,15 @@ export const generateSessionReplyText = async ({
 
   const promptHistory = manageContext(history);
   const scenario = toScenario(context);
+  const userNameContext = toUserNameContext(
+    context.user_full_name,
+    context.user_email
+  );
   const systemPrompt = buildCharacterPrompt(
     scenario,
     context.difficulty_level,
-    context.custom_context || undefined
+    context.custom_context || undefined,
+    userNameContext
   );
 
   const assistantContent = await getGroqChatCompletion(

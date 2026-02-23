@@ -1,19 +1,25 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
-import type { CreateCustomScenarioInput, Scenario } from '@/lib/api/types';
+import { useMemo, useState } from 'react';
 import {
+  FiBookOpen,
+  FiCheckCircle,
   FiEdit2,
-  FiFilter,
+  FiLoader,
   FiPlus,
-  FiPlayCircle,
   FiRefreshCw,
   FiSearch,
   FiTrash2,
-  FiX,
+  FiZap,
 } from 'react-icons/fi';
-import { Panel } from '../panel';
+import type {
+  CreateCustomScenarioInput,
+  DifficultyLevel,
+  Scenario,
+  ScenarioCategory,
+} from '@/lib/api/types';
 import type { ScenarioCategoryFilter } from '../types';
+import { Panel } from '../panel';
 
 type ScenarioBrowserViewProps = {
   scenarios: Scenario[];
@@ -32,7 +38,7 @@ type ScenarioBrowserViewProps = {
   onCategoryChange: (value: ScenarioCategoryFilter) => void;
   onCustomOnlyChange: (value: boolean) => void;
   onRefresh: () => void;
-  onSelectScenario: (id: string) => void;
+  onSelectScenario: (scenarioId: string) => void;
   onStartPractice: () => void;
   onCreateScenario: (payload: CreateCustomScenarioInput) => Promise<void>;
   onUpdateScenario: (input: {
@@ -42,55 +48,146 @@ type ScenarioBrowserViewProps = {
   onDeleteScenario: (scenarioId: string) => Promise<void>;
 };
 
-const categories: ScenarioCategoryFilter[] = [
-  'all',
-  'work',
-  'health',
-  'family',
-  'social',
-  'financial',
-  'legal',
-];
-
-const categoryLabel = (value: ScenarioCategoryFilter): string => {
-  if (value === 'all') return 'All';
-  return value[0].toUpperCase() + value.slice(1);
-};
-
-const parseCsvList = (value: string): string[] =>
-  value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-
 type ScenarioFormState = {
   title: string;
-  category: Scenario['category'];
+  category: ScenarioCategory;
   description: string;
   characterName: string;
   characterRole: string;
-  personalityCsv: string;
-  goalsCsv: string;
-  emotionalState: string;
-  cooperativeModifier: string;
-  neutralModifier: string;
-  resistantModifier: string;
-  hostileModifier: string;
 };
 
-const defaultScenarioFormState = (): ScenarioFormState => ({
+const scenarioCategories: Array<{
+  value: ScenarioCategory;
+  label: string;
+}> = [
+  { value: 'work', label: 'Work' },
+  { value: 'health', label: 'Health' },
+  { value: 'family', label: 'Family' },
+  { value: 'social', label: 'Social' },
+  { value: 'financial', label: 'Financial' },
+  { value: 'legal', label: 'Legal' },
+];
+
+const defaultFormState: ScenarioFormState = {
   title: '',
   category: 'work',
   description: '',
   characterName: '',
   characterRole: '',
-  personalityCsv: '',
-  goalsCsv: '',
-  emotionalState: '',
-  cooperativeModifier: '',
-  neutralModifier: '',
-  resistantModifier: '',
-  hostileModifier: '',
+};
+
+const categoryPersonalityMap: Record<ScenarioCategory, string[]> = {
+  work: ['professional', 'time-conscious', 'results-driven'],
+  health: ['empathetic', 'careful', 'supportive'],
+  family: ['emotional', 'protective', 'opinionated'],
+  social: ['friendly', 'expressive', 'reactive'],
+  financial: ['analytical', 'detail-focused', 'risk-aware'],
+  legal: ['formal', 'precise', 'policy-focused'],
+};
+
+const difficultyLevels: DifficultyLevel[] = [
+  'cooperative',
+  'neutral',
+  'resistant',
+  'hostile',
+];
+
+const normalizeText = (value: string): string =>
+  value.replace(/\s+/g, ' ').trim();
+
+const toSentenceCase = (value: string): string => {
+  const cleaned = normalizeText(value);
+  if (!cleaned) return '';
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+};
+
+const truncate = (value: string, max = 150): string => {
+  if (value.length <= max) return value;
+  return `${value.slice(0, max - 1)}...`;
+};
+
+const buildDifficultyVariant = (
+  level: DifficultyLevel,
+  name: string,
+  role: string,
+  context: string,
+): { level: DifficultyLevel; behaviorModifier: string } => {
+  const shared = `${name} (${role}) is discussing: ${context}.`;
+
+  if (level === 'cooperative') {
+    return {
+      level,
+      behaviorModifier: `${shared} They collaborate easily, listen actively, and help move toward agreement.`,
+    };
+  }
+
+  if (level === 'neutral') {
+    return {
+      level,
+      behaviorModifier: `${shared} They are balanced and practical, needing clear reasoning before agreeing.`,
+    };
+  }
+
+  if (level === 'resistant') {
+    return {
+      level,
+      behaviorModifier: `${shared} They push back on weak arguments, question assumptions, and require evidence.`,
+    };
+  }
+
+  return {
+    level,
+    behaviorModifier: `${shared} They are defensive, interrupt frequently, and challenge tone and credibility.`,
+  };
+};
+
+const buildAutoScenarioPayload = (
+  form: ScenarioFormState,
+): CreateCustomScenarioInput => {
+  const title = toSentenceCase(form.title);
+  const description = toSentenceCase(form.description);
+  const characterName = toSentenceCase(form.characterName);
+  const characterRole = toSentenceCase(form.characterRole);
+
+  const personality = [
+    ...categoryPersonalityMap[form.category],
+    'goal-oriented',
+  ];
+
+  const goals = [
+    `Understand your position about ${title.toLowerCase()}.`,
+    'Protect their own interests while staying realistic.',
+    'End with clear next steps and accountability.',
+  ];
+
+  const emotionalState =
+    form.category === 'family' || form.category === 'social'
+      ? 'emotionally invested but willing to engage'
+      : 'cautious but open to practical solutions';
+
+  return {
+    title,
+    category: form.category,
+    description,
+    characterProfile: {
+      name: characterName,
+      role: characterRole,
+      personality,
+      goals,
+      emotionalState,
+    },
+    difficultyVariants: difficultyLevels.map((level) =>
+      buildDifficultyVariant(level, characterName, characterRole, description),
+    ),
+  };
+};
+
+const mapScenarioToForm = (scenario: Scenario): ScenarioFormState => ({
+  title: scenario.title,
+  category: scenario.category,
+  description: scenario.description,
+  characterName: scenario.characterProfile.name,
+  characterRole: scenario.characterProfile.role,
 });
 
 export function ScenarioBrowserView({
@@ -116,466 +213,417 @@ export function ScenarioBrowserView({
   onUpdateScenario,
   onDeleteScenario,
 }: ScenarioBrowserViewProps) {
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingScenarioId, setEditingScenarioId] = useState<string | null>(null);
+  const [formState, setFormState] = useState<ScenarioFormState>(defaultFormState);
+  const [editingScenarioId, setEditingScenarioId] = useState<string | null>(
+    null,
+  );
   const [formError, setFormError] = useState<string | null>(null);
-  const [formState, setFormState] = useState<ScenarioFormState>(
-    defaultScenarioFormState,
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+
+  const selectedScenario = useMemo(
+    () => scenarios.find((scenario) => scenario.id === selectedScenarioId) || null,
+    [scenarios, selectedScenarioId],
   );
 
-  const updateFormState = <K extends keyof ScenarioFormState>(
-    key: K,
-    value: ScenarioFormState[K],
-  ) => {
-    setFormState((previous) => ({ ...previous, [key]: value }));
+  const autoPayloadPreview = useMemo(
+    () => buildAutoScenarioPayload(formState),
+    [formState],
+  );
+
+  const isSubmittingForm =
+    isCreatingScenario || isUpdatingScenario || isDeletingScenario;
+
+  const startEditSelected = () => {
+    if (!selectedScenario?.isCustom) return;
+    setEditingScenarioId(selectedScenario.id);
+    setFormState(mapScenarioToForm(selectedScenario));
+    setFormError(null);
+    setFormSuccess(null);
   };
 
-  const getModifier = (
-    scenario: Scenario,
-    level: 'cooperative' | 'neutral' | 'resistant' | 'hostile',
-  ): string =>
-    scenario.difficultyVariants.find((variant) => variant.level === level)
-      ?.behaviorModifier || '';
-
-  const openCreateScenarioForm = () => {
-    setShowCreateForm(true);
+  const resetForm = () => {
     setEditingScenarioId(null);
+    setFormState(defaultFormState);
     setFormError(null);
-    setFormState(defaultScenarioFormState());
+    setFormSuccess(null);
   };
 
-  const openEditScenarioForm = (scenario: Scenario) => {
-    setShowCreateForm(true);
-    setEditingScenarioId(scenario.id);
-    setFormError(null);
-    setFormState({
-      title: scenario.title,
-      category: scenario.category,
-      description: scenario.description,
-      characterName: scenario.characterProfile.name,
-      characterRole: scenario.characterProfile.role,
-      personalityCsv: scenario.characterProfile.personality.join(', '),
-      goalsCsv: scenario.characterProfile.goals.join(', '),
-      emotionalState: scenario.characterProfile.emotionalState,
-      cooperativeModifier: getModifier(scenario, 'cooperative'),
-      neutralModifier: getModifier(scenario, 'neutral'),
-      resistantModifier: getModifier(scenario, 'resistant'),
-      hostileModifier: getModifier(scenario, 'hostile'),
-    });
+  const validateForm = (): string | null => {
+    const title = normalizeText(formState.title);
+    const description = normalizeText(formState.description);
+    const characterName = normalizeText(formState.characterName);
+    const characterRole = normalizeText(formState.characterRole);
+
+    if (!title || title.length < 3) return 'Scenario title must be at least 3 characters.';
+    if (!description || description.length < 10)
+      return 'Situation details must be at least 10 characters.';
+    if (!characterName) return 'Character name is required.';
+    if (!characterRole) return 'Character role is required.';
+    return null;
   };
 
-  const buildScenarioPayload = (): CreateCustomScenarioInput => ({
-    title: formState.title.trim(),
-    category: formState.category,
-    description: formState.description.trim(),
-    characterProfile: {
-      name: formState.characterName.trim(),
-      role: formState.characterRole.trim(),
-      personality: parseCsvList(formState.personalityCsv),
-      goals: parseCsvList(formState.goalsCsv),
-      emotionalState: formState.emotionalState.trim(),
-    },
-    difficultyVariants: [
-      {
-        level: 'cooperative',
-        behaviorModifier: formState.cooperativeModifier.trim(),
-      },
-      {
-        level: 'neutral',
-        behaviorModifier: formState.neutralModifier.trim(),
-      },
-      {
-        level: 'resistant',
-        behaviorModifier: formState.resistantModifier.trim(),
-      },
-      {
-        level: 'hostile',
-        behaviorModifier: formState.hostileModifier.trim(),
-      },
-    ],
-  });
-
-  const handleUpsertScenario = async (
-    event: FormEvent<HTMLFormElement>,
-  ): Promise<void> => {
-    event.preventDefault();
+  const handleSubmit = async () => {
     setFormError(null);
+    setFormSuccess(null);
 
-    const payload = buildScenarioPayload();
-
-    if (payload.characterProfile.personality.length === 0) {
-      setFormError('Add at least one personality trait.');
+    const validationError = validateForm();
+    if (validationError) {
+      setFormError(validationError);
       return;
     }
 
-    if (payload.characterProfile.goals.length === 0) {
-      setFormError('Add at least one scenario goal.');
-      return;
-    }
-
-    if (
-      !payload.difficultyVariants[0].behaviorModifier ||
-      !payload.difficultyVariants[1].behaviorModifier ||
-      !payload.difficultyVariants[2].behaviorModifier ||
-      !payload.difficultyVariants[3].behaviorModifier
-    ) {
-      setFormError('Provide behavior modifiers for all 4 difficulty levels.');
-      return;
-    }
+    const payload = buildAutoScenarioPayload(formState);
 
     try {
       if (editingScenarioId) {
-        await onUpdateScenario({
-          scenarioId: editingScenarioId,
-          payload,
-        });
+        await onUpdateScenario({ scenarioId: editingScenarioId, payload });
+        setFormSuccess('Custom scenario updated.');
       } else {
         await onCreateScenario(payload);
+        setFormSuccess('Custom scenario created.');
+        setFormState(defaultFormState);
       }
-
-      setShowCreateForm(false);
-      setEditingScenarioId(null);
-      setFormState(defaultScenarioFormState());
-      setFormError(null);
     } catch {
-      setFormError(
-        editingScenarioId
-          ? 'Could not update the scenario. Please review the inputs.'
-          : 'Could not create the scenario. Please review the inputs.',
-      );
+      setFormError('Could not save scenario. Check the error banner and retry.');
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!selectedScenario?.isCustom) return;
+    if (
+      !window.confirm(
+        `Delete "${selectedScenario.title}"? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    setFormError(null);
+    setFormSuccess(null);
+
+    try {
+      await onDeleteScenario(selectedScenario.id);
+      if (editingScenarioId === selectedScenario.id) {
+        resetForm();
+      }
+      setFormSuccess('Custom scenario deleted.');
+    } catch {
+      setFormError('Could not delete this scenario. It may already be used in session history.');
     }
   };
 
   return (
     <Panel
       title='Scenario Browser'
-      description='Browse, filter, create, and choose the situation you want to rehearse.'
+      description='Pick a scenario or create your own. Advanced fields are generated automatically.'
       rightSlot={
-        <div className='inline-flex items-center gap-2'>
-          <button
-            type='button'
-            onClick={() => {
-              if (showCreateForm) {
-                setShowCreateForm(false);
-                setEditingScenarioId(null);
-                setFormState(defaultScenarioFormState());
-                setFormError(null);
-                return;
-              }
-              openCreateScenarioForm();
-            }}
-            className='inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/6 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/80'
-          >
-            {showCreateForm ? <FiX size={12} /> : <FiPlus size={12} />}
-            {showCreateForm ? 'Close' : 'New custom'}
-          </button>
-          <button
-            type='button'
-            onClick={onRefresh}
-            className='inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/6 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/80'
-          >
-            <FiRefreshCw size={12} />
-            Refresh
-          </button>
-        </div>
-      }
-    >
-      {showCreateForm ? (
-        <form
-          onSubmit={(event) => {
-            void handleUpsertScenario(event);
-          }}
-          className='mb-4 grid gap-3 rounded-xl border border-white/15 bg-[#141414] p-4'
-        >
-          <p className='text-xs font-semibold uppercase tracking-[0.12em] text-white/55'>
-            {editingScenarioId ? 'Edit Custom Scenario' : 'Create Custom Scenario'}
-          </p>
-
-          <div className='grid gap-3 md:grid-cols-2'>
-            <input
-              value={formState.title}
-              onChange={(event) => updateFormState('title', event.target.value)}
-              placeholder='Scenario title'
-              className='rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35'
-              required
-            />
-            <select
-              value={formState.category}
-              onChange={(event) =>
-                updateFormState('category', event.target.value as Scenario['category'])
-              }
-              className='rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none'
-            >
-              {categories
-                .filter((item): item is Scenario['category'] => item !== 'all')
-                .map((item) => (
-                  <option key={item} value={item}>
-                    {categoryLabel(item)}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          <textarea
-            value={formState.description}
-            onChange={(event) =>
-              updateFormState('description', event.target.value)
-            }
-            placeholder='Describe the situation and goal...'
-            className='min-h-20 rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35'
-            required
-          />
-
-          <div className='grid gap-3 md:grid-cols-2'>
-            <input
-              value={formState.characterName}
-              onChange={(event) =>
-                updateFormState('characterName', event.target.value)
-              }
-              placeholder='Character name'
-              className='rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35'
-              required
-            />
-            <input
-              value={formState.characterRole}
-              onChange={(event) =>
-                updateFormState('characterRole', event.target.value)
-              }
-              placeholder='Character role'
-              className='rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35'
-              required
-            />
-          </div>
-
-          <div className='grid gap-3 md:grid-cols-2'>
-            <input
-              value={formState.personalityCsv}
-              onChange={(event) =>
-                updateFormState('personalityCsv', event.target.value)
-              }
-              placeholder='Personality traits (comma separated)'
-              className='rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35'
-              required
-            />
-            <input
-              value={formState.goalsCsv}
-              onChange={(event) => updateFormState('goalsCsv', event.target.value)}
-              placeholder='Goals (comma separated)'
-              className='rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35'
-              required
-            />
-          </div>
-
-          <input
-            value={formState.emotionalState}
-            onChange={(event) =>
-              updateFormState('emotionalState', event.target.value)
-            }
-            placeholder='Emotional state'
-            className='rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35'
-            required
-          />
-
-          <div className='grid gap-3 md:grid-cols-2'>
-            <input
-              value={formState.cooperativeModifier}
-              onChange={(event) =>
-                updateFormState('cooperativeModifier', event.target.value)
-              }
-              placeholder='Cooperative behavior modifier'
-              className='rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35'
-              required
-            />
-            <input
-              value={formState.neutralModifier}
-              onChange={(event) =>
-                updateFormState('neutralModifier', event.target.value)
-              }
-              placeholder='Neutral behavior modifier'
-              className='rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35'
-              required
-            />
-            <input
-              value={formState.resistantModifier}
-              onChange={(event) =>
-                updateFormState('resistantModifier', event.target.value)
-              }
-              placeholder='Resistant behavior modifier'
-              className='rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35'
-              required
-            />
-            <input
-              value={formState.hostileModifier}
-              onChange={(event) =>
-                updateFormState('hostileModifier', event.target.value)
-              }
-              placeholder='Hostile behavior modifier'
-              className='rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35'
-              required
-            />
-          </div>
-
-          {formError ? <p className='text-xs text-rose-300'>{formError}</p> : null}
-          {createScenarioErrorMessage ? (
-            <p className='text-xs text-rose-300'>{createScenarioErrorMessage}</p>
-          ) : null}
-
-          <div>
-            <button
-              type='submit'
-              disabled={isCreatingScenario || isUpdatingScenario}
-              className='inline-flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-500 to-orange-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#120f07] disabled:cursor-not-allowed disabled:opacity-60'
-            >
-              {editingScenarioId
-                ? isUpdatingScenario
-                  ? 'Saving...'
-                  : 'Save changes'
-                : isCreatingScenario
-                  ? 'Creating...'
-                  : 'Create scenario'}
-            </button>
-          </div>
-        </form>
-      ) : null}
-
-      <div className='grid gap-3 md:grid-cols-[1fr_auto]'>
-        <label className='flex items-center gap-2 rounded-xl border border-white/15 bg-[#141414] px-3 py-2.5'>
-          <FiSearch className='text-white/40' />
-          <input
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder='Search scenarios...'
-            className='w-full bg-transparent text-sm text-white outline-none placeholder:text-white/35'
-          />
-        </label>
-
-        <label className='inline-flex items-center gap-2 rounded-xl border border-white/15 bg-[#141414] px-3 py-2.5 text-xs text-white/80'>
-          <input
-            type='checkbox'
-            checked={customOnly}
-            onChange={(event) => onCustomOnlyChange(event.target.checked)}
-          />
-          Custom only
-        </label>
-      </div>
-
-      <div className='mt-3 flex flex-wrap gap-2'>
-        {categories.map((value) => {
-          const isActive = value === category;
-          return (
-            <button
-              key={value}
-              type='button'
-              onClick={() => onCategoryChange(value)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] transition ${
-                isActive
-                  ? 'border-white/35 bg-white/16 text-white'
-                  : 'border-white/15 bg-white/4 text-white/65 hover:text-white'
-              }`}
-            >
-              {categoryLabel(value)}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className='mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3'>
-        {scenarios.map((scenario) => {
-          const isActive = selectedScenarioId === scenario.id;
-          return (
-            <div
-              key={scenario.id}
-              className={`rounded-xl border p-3 transition ${
-                isActive
-                  ? 'border-amber-400/45 bg-amber-400/10'
-                  : 'border-white/15 bg-[#141414] hover:border-white/25'
-              }`}
-            >
-              <button
-                type='button'
-                onClick={() => onSelectScenario(scenario.id)}
-                className='w-full text-left'
-              >
-                <p className='text-xs uppercase tracking-[0.12em] text-white/45'>
-                  {scenario.category}
-                  {scenario.isCustom ? ' • custom' : ''}
-                </p>
-                <p className='mt-1 text-sm font-semibold text-white'>
-                  {scenario.title}
-                </p>
-                <p className='mt-2 text-xs text-white/55'>
-                  {scenario.description}
-                </p>
-              </button>
-
-              {scenario.isCustom ? (
-                <div className='mt-3 flex items-center gap-2'>
-                  <button
-                    type='button'
-                    onClick={() => openEditScenarioForm(scenario)}
-                    disabled={isUpdatingScenario}
-                    className='inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/75 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50'
-                  >
-                    <FiEdit2 size={11} />
-                    Edit
-                  </button>
-                  <button
-                    type='button'
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          'Delete this custom scenario? This cannot be undone.',
-                        )
-                      ) {
-                        void onDeleteScenario(scenario.id);
-                      }
-                    }}
-                    disabled={isDeletingScenario}
-                    className='inline-flex items-center gap-1 rounded-lg border border-rose-400/30 bg-rose-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-rose-100 transition hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-50'
-                  >
-                    <FiTrash2 size={11} />
-                    Delete
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-
-      {isLoading ? (
-        <p className='mt-4 text-sm text-white/55'>Loading scenarios...</p>
-      ) : null}
-
-      {!isLoading && scenarios.length === 0 ? (
-        <div className='mt-4 rounded-xl border border-white/15 bg-[#141414] p-4 text-sm text-white/60'>
-          <p>No scenarios match your current filters.</p>
-          <p className='mt-1 text-xs text-white/45'>
-            If your database is empty, run `npm run seed:scenarios` in
-            `server/` and refresh.
-          </p>
-        </div>
-      ) : null}
-
-      {errorMessage ? (
-        <p className='mt-4 text-sm text-rose-300'>{errorMessage}</p>
-      ) : null}
-
-      <div className='mt-4 inline-flex items-center gap-3'>
         <button
           type='button'
-          disabled={!selectedScenarioId}
-          onClick={onStartPractice}
-          className='inline-flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-500 to-orange-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#120f07] disabled:cursor-not-allowed disabled:opacity-60'
+          onClick={onRefresh}
+          className='inline-flex items-center gap-1 rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-white/80 transition hover:border-white/30'
         >
-          <FiPlayCircle size={13} />
-          Go to setup
+          <FiRefreshCw className={isFetching ? 'animate-spin' : ''} size={12} />
+          Refresh
         </button>
+      }
+    >
+      <div className='grid gap-4 xl:grid-cols-[1.1fr_0.9fr]'>
+        <section className='space-y-3'>
+          <div className='grid gap-2 sm:grid-cols-[1fr_130px_auto]'>
+            <label className='relative block'>
+              <FiSearch
+                size={14}
+                className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/35'
+              />
+              <input
+                value={search}
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder='Search scenarios'
+                className='w-full rounded-xl border border-white/15 bg-[#141414] py-2.5 pl-9 pr-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-400/50'
+              />
+            </label>
 
-        <span className='inline-flex items-center gap-1 text-xs text-white/55'>
-          <FiFilter size={12} />
-          {isFetching ? 'Refreshing results...' : `${scenarios.length} scenarios`}
-        </span>
+            <select
+              value={category}
+              onChange={(event) =>
+                onCategoryChange(event.target.value as ScenarioCategoryFilter)
+              }
+              className='rounded-xl border border-white/15 bg-[#141414] px-3 py-2.5 text-sm text-white outline-none focus:border-amber-400/50'
+            >
+              <option value='all'>All</option>
+              {scenarioCategories.map((entry) => (
+                <option key={entry.value} value={entry.value}>
+                  {entry.label}
+                </option>
+              ))}
+            </select>
+
+            <label className='inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-xs text-white/80'>
+              <input
+                type='checkbox'
+                checked={customOnly}
+                onChange={(event) => onCustomOnlyChange(event.target.checked)}
+                className='h-3.5 w-3.5 accent-amber-500'
+              />
+              Custom only
+            </label>
+          </div>
+
+          <div className='max-h-[52dvh] space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.22)_transparent] [scrollbar-width:thin]'>
+            {isLoading ? (
+              <div className='flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-3 text-sm text-white/70'>
+                <FiLoader className='animate-spin' />
+                Loading scenarios...
+              </div>
+            ) : null}
+
+            {!isLoading && !scenarios.length ? (
+              <div className='rounded-xl border border-dashed border-white/15 bg-white/4 px-3 py-4 text-sm text-white/60'>
+                No scenarios match this filter.
+              </div>
+            ) : null}
+
+            {!isLoading
+              ? scenarios.map((scenario) => {
+                  const isSelected = scenario.id === selectedScenarioId;
+                  return (
+                    <button
+                      key={scenario.id}
+                      type='button'
+                      onClick={() => onSelectScenario(scenario.id)}
+                      className={`w-full rounded-xl border p-3 text-left transition ${
+                        isSelected
+                          ? 'border-amber-400/45 bg-amber-400/10'
+                          : 'border-white/12 bg-white/4 hover:border-white/30'
+                      }`}
+                    >
+                      <div className='flex items-start justify-between gap-2'>
+                        <div className='min-w-0'>
+                          <p className='truncate text-sm font-semibold text-white'>
+                            {scenario.title}
+                          </p>
+                          <p className='mt-1 text-xs text-white/70'>
+                            {truncate(scenario.description)}
+                          </p>
+                        </div>
+                        <div className='shrink-0 space-y-1 text-right'>
+                          <span className='inline-flex rounded-full border border-white/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-white/70'>
+                            {scenario.category}
+                          </span>
+                          {scenario.isCustom ? (
+                            <p className='text-[10px] uppercase tracking-[0.12em] text-amber-300/90'>
+                              Custom
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
+              : null}
+          </div>
+
+          <div className='flex flex-wrap items-center gap-2'>
+            <button
+              type='button'
+              onClick={onStartPractice}
+              disabled={!selectedScenarioId}
+              className='inline-flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-500 to-orange-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#120f07] disabled:cursor-not-allowed disabled:opacity-60'
+            >
+              <FiZap size={13} />
+              Start practice
+            </button>
+
+            {selectedScenario?.isCustom ? (
+              <>
+                <button
+                  type='button'
+                  onClick={startEditSelected}
+                  disabled={isSubmittingForm}
+                  className='inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/80 disabled:opacity-50'
+                >
+                  <FiEdit2 size={12} />
+                  Edit selected
+                </button>
+                <button
+                  type='button'
+                  onClick={handleDeleteSelected}
+                  disabled={isSubmittingForm}
+                  className='inline-flex items-center gap-1 rounded-lg border border-rose-400/35 bg-rose-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-rose-200 disabled:opacity-50'
+                >
+                  <FiTrash2 size={12} />
+                  Delete selected
+                </button>
+              </>
+            ) : null}
+          </div>
+        </section>
+
+        <section className='rounded-xl border border-white/12 bg-[#131313]/85 p-3 sm:p-4'>
+          <div className='mb-3 flex items-center justify-between gap-2'>
+            <p className='inline-flex items-center gap-2 text-sm font-semibold text-white'>
+              <FiPlus size={14} />
+              {editingScenarioId
+                ? 'Edit custom scenario'
+                : 'Create custom scenario'}
+            </p>
+            {editingScenarioId ? (
+              <button
+                type='button'
+                onClick={resetForm}
+                className='rounded-md border border-white/20 px-2 py-1 text-[11px] uppercase tracking-[0.1em] text-white/70 transition hover:text-white'
+              >
+                Cancel edit
+              </button>
+            ) : null}
+          </div>
+
+          <p className='mb-3 text-xs text-white/55'>
+            You only fill in basics. Personality, goals, emotional state, and
+            all difficulty behavior are generated automatically.
+          </p>
+
+          <div className='space-y-2.5'>
+            <label className='block'>
+              <span className='mb-1 inline-block text-xs text-white/60'>
+                Scenario title
+              </span>
+              <input
+                value={formState.title}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, title: event.target.value }))
+                }
+                maxLength={255}
+                placeholder='Ask for salary review'
+                className='w-full rounded-lg border border-white/15 bg-[#151515] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-400/50'
+              />
+            </label>
+
+            <div className='grid gap-2 sm:grid-cols-2'>
+              <label className='block'>
+                <span className='mb-1 inline-block text-xs text-white/60'>
+                  Character name
+                </span>
+                <input
+                  value={formState.characterName}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      characterName: event.target.value,
+                    }))
+                  }
+                  maxLength={120}
+                  placeholder='Taylor'
+                  className='w-full rounded-lg border border-white/15 bg-[#151515] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-400/50'
+                />
+              </label>
+
+              <label className='block'>
+                <span className='mb-1 inline-block text-xs text-white/60'>
+                  Character role
+                </span>
+                <input
+                  value={formState.characterRole}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      characterRole: event.target.value,
+                    }))
+                  }
+                  maxLength={120}
+                  placeholder='Your manager'
+                  className='w-full rounded-lg border border-white/15 bg-[#151515] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-400/50'
+                />
+              </label>
+            </div>
+
+            <label className='block'>
+              <span className='mb-1 inline-block text-xs text-white/60'>
+                Scenario category
+              </span>
+              <select
+                value={formState.category}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    category: event.target.value as ScenarioCategory,
+                  }))
+                }
+                className='w-full rounded-lg border border-white/15 bg-[#151515] px-3 py-2.5 text-sm text-white outline-none focus:border-amber-400/50'
+              >
+                {scenarioCategories.map((entry) => (
+                  <option key={entry.value} value={entry.value}>
+                    {entry.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className='block'>
+              <span className='mb-1 inline-block text-xs text-white/60'>
+                Situation details
+              </span>
+              <textarea
+                value={formState.description}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
+                }
+                rows={4}
+                maxLength={2000}
+                placeholder='You want to discuss delayed repayment and agree on a clear timeline.'
+                className='w-full resize-y rounded-lg border border-white/15 bg-[#151515] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-400/50'
+              />
+            </label>
+          </div>
+
+          <div className='mt-3 rounded-lg border border-white/10 bg-white/4 p-3 text-xs text-white/70'>
+            <p className='font-semibold text-white/85'>Auto-generated preview</p>
+            <p className='mt-1'>Mood: {autoPayloadPreview.characterProfile.emotionalState}</p>
+            <p className='mt-1'>
+              Personality: {autoPayloadPreview.characterProfile.personality.join(', ')}
+            </p>
+            <p className='mt-1'>
+              Goals: {autoPayloadPreview.characterProfile.goals[0]}
+            </p>
+            <p className='mt-1'>
+              Difficulty tiers: cooperative, neutral, resistant, hostile.
+            </p>
+          </div>
+
+          <div className='mt-3 flex flex-wrap items-center gap-2'>
+            <button
+              type='button'
+              onClick={handleSubmit}
+              disabled={isSubmittingForm}
+              className='inline-flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-500 to-orange-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#120f07] disabled:cursor-not-allowed disabled:opacity-60'
+            >
+              {isSubmittingForm ? (
+                <FiLoader size={13} className='animate-spin' />
+              ) : (
+                <FiBookOpen size={13} />
+              )}
+              {editingScenarioId ? 'Save changes' : 'Create scenario'}
+            </button>
+
+            {formSuccess ? (
+              <span className='inline-flex items-center gap-1 text-xs text-emerald-300'>
+                <FiCheckCircle size={12} />
+                {formSuccess}
+              </span>
+            ) : null}
+          </div>
+
+          {formError ? <p className='mt-2 text-sm text-rose-300'>{formError}</p> : null}
+          {errorMessage ? (
+            <p className='mt-2 text-sm text-rose-300'>{errorMessage}</p>
+          ) : null}
+          {createScenarioErrorMessage ? (
+            <p className='mt-2 text-sm text-rose-300'>{createScenarioErrorMessage}</p>
+          ) : null}
+        </section>
       </div>
     </Panel>
   );

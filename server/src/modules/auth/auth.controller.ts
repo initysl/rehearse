@@ -16,6 +16,7 @@ import {
   refreshTokenSchema,
   registerSchema,
 } from "./auth.types";
+import { findProfileByUserId } from "../users/users.service";
 import {
   buildErrorRedirect,
   clearAuthCookies,
@@ -233,7 +234,13 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    return res.status(200).json({ user: req.user });
+    const profile = await findProfileByUserId(req.user.userId);
+    return res.status(200).json({
+      user: {
+        ...req.user,
+        fullName: profile?.fullName || null,
+      },
+    });
   } catch (error) {
     return handleControllerError(error, next);
   }

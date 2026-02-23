@@ -59,10 +59,11 @@ const toAuthResponse = (
 export const registerWithEmailPassword = async (
   payload: RegisterInput
 ): Promise<AuthResponse> => {
+  const fullName = payload.fullName?.trim();
   const { user, session } = await supabaseAuthApi.signUp({
     email: payload.email,
     password: payload.password,
-    fullName: payload.fullName,
+    fullName: fullName || undefined,
   });
 
   if (!user && !session) {

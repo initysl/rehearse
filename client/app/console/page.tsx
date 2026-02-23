@@ -180,7 +180,11 @@ export default function ConsolePage() {
 
   const userSummary = useMemo(() => {
     if (!meQuery.data?.user) return 'Loading user...';
-    return meQuery.data.user.email || meQuery.data.user.userId;
+    return (
+      meQuery.data.user.fullName ||
+      meQuery.data.user.email ||
+      meQuery.data.user.userId
+    );
   }, [meQuery.data]);
 
   useEffect(() => {

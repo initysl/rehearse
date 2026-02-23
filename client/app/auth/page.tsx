@@ -13,6 +13,7 @@ import {
   FiLock,
   FiMail,
   FiLoader,
+  FiUser,
 } from 'react-icons/fi';
 import { z } from 'zod';
 import { ApiError } from '@/lib/api/client';
@@ -29,6 +30,11 @@ import { FaGoogle } from 'react-icons/fa';
 type AuthMode = 'signin' | 'signup';
 
 const authSchema = z.object({
+  fullName: z
+    .string()
+    .trim()
+    .max(120, 'Full name is too long.')
+    .optional(),
   email: z
     .string()
     .trim()
@@ -109,6 +115,7 @@ export default function AuthPage() {
   } = useForm<AuthFormValues>({
     resolver: zodResolver(authSchema),
     defaultValues: {
+      fullName: '',
       email: 'you@gmail.com',
       password: '',
     },
@@ -156,13 +163,37 @@ export default function AuthPage() {
     try {
       if (mode === 'signin') {
         recordAttempt();
-        await loginMutation.mutateAsync(values);
+        await loginMutation.mutateAsync({
+          email: values.email,
+          password: values.password,
+        });
         router.push('/console');
         return;
       }
 
+      const fullName = values.fullName?.trim() || '';
+      if (!fullName) {
+        setError('fullName', {
+          type: 'manual',
+          message: 'Full name is required for sign up.',
+        });
+        return;
+      }
+
+      if (fullName.length < 2) {
+        setError('fullName', {
+          type: 'manual',
+          message: 'Full name must be at least 2 characters.',
+        });
+        return;
+      }
+
       recordAttempt();
-      const registerResult = await registerMutation.mutateAsync(values);
+      const registerResult = await registerMutation.mutateAsync({
+        email: values.email,
+        password: values.password,
+        fullName,
+      });
 
       if (registerResult.requiresEmailConfirmation) {
         setNotice(
@@ -333,6 +364,37 @@ export default function AuthPage() {
             onSubmit={handleSubmit(onSubmit)}
             noValidate
           >
+            {mode === 'signup' ? (
+              <label className='block'>
+                <span className='mb-1.5 inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.08em] text-white/35'>
+                  <FiUser size={11} /> Full name
+                </span>
+                <input
+                  className={`w-full rounded-xl border bg-[#0f0d06] px-3.5 py-3 text-sm text-white outline-none placeholder:text-white/25 transition ${
+                    errors.fullName
+                      ? 'border-rose-400/60 focus:border-rose-400/70'
+                      : 'border-white/10 focus:border-amber-400/45'
+                  }`}
+                  type='text'
+                  placeholder='Ada Lovelace'
+                  autoComplete='name'
+                  maxLength={120}
+                  aria-invalid={Boolean(errors.fullName)}
+                  aria-describedby={errors.fullName ? 'error-fullName' : undefined}
+                  {...register('fullName')}
+                />
+                {errors.fullName ? (
+                  <p
+                    id='error-fullName'
+                    role='alert'
+                    className='mt-1.5 text-xs text-rose-300'
+                  >
+                    {errors.fullName.message}
+                  </p>
+                ) : null}
+              </label>
+            ) : null}
+
             <label className='block'>
               <span className='mb-1.5 inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.08em] text-white/35'>
                 <FiMail size={11} /> Email
