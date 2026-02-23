@@ -9,6 +9,7 @@ export const handleVoiceSession = (
   context: { sessionId: string; userId: string }
 ) => {
   const audioChunks: Buffer[] = [];
+  let audioMimeType = "audio/webm";
 
   ws.on("message", async (data: Buffer, isBinary: boolean) => {
     try {
@@ -19,6 +20,25 @@ export const handleVoiceSession = (
       }
 
       const message = JSON.parse(data.toString());
+
+      if (message.type === "audio_start") {
+        const incomingMimeType =
+          typeof message.mimeType === "string" ? message.mimeType : "";
+
+        if (incomingMimeType.startsWith("audio/")) {
+          audioMimeType = incomingMimeType;
+        } else {
+          audioMimeType = "audio/webm";
+        }
+
+        ws.send(
+          JSON.stringify({
+            type: "status",
+            message: "listening",
+          })
+        );
+        return;
+      }
 
       if (message.type === "audio_end") {
         if (audioChunks.length === 0) {
@@ -32,7 +52,8 @@ export const handleVoiceSession = (
 
         ws.send(JSON.stringify({ type: "status", message: "transcribing" }));
 
-        const transcript = await transcribeAudio(audioBuffer);
+        const transcript = await transcribeAudio(audioBuffer, audioMimeType);
+        audioMimeType = "audio/webm";
         if (!transcript.trim()) {
           ws.send(JSON.stringify({ type: "status", message: "empty_transcript" }));
           return;
@@ -56,12 +77,13 @@ export const handleVoiceSession = (
         ws.send(JSON.stringify({ type: "status", message: "idle" }));
       }
     } catch (err) {
+      const message = (err as Error).message || "Voice processing failed";
       logError("voice.ws.processing_failed", {
         sessionId: context.sessionId,
         userId: context.userId,
-        error: (err as Error).message,
+        error: message,
       });
-      ws.send(JSON.stringify({ type: "error", message: "Voice processing failed" }));
+      ws.send(JSON.stringify({ type: "error", message }));
     }
   });
 

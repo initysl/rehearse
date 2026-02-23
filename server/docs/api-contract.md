@@ -64,6 +64,7 @@ Base URL (local): `http://localhost:5000`
 
 - Endpoint: `ws://localhost:5000/ws/voice?sessionId=<uuid>&token=<accessToken>`
 - Message flow:
-  - Client sends binary `audio_chunk` frames
+  - Client sends JSON `{ "type": "audio_start", "mimeType": "audio/webm;codecs=opus" }`
+  - Client streams binary `audio_chunk` frames
   - Client sends JSON `{ "type": "audio_end" }`
   - Server returns transcript + assistant text + streamed audio chunks
