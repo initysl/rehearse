@@ -11,7 +11,7 @@ export function LandingNavbar() {
       className='fixed left-0 right-0 top-0 z-50 border-b border-white/6 backdrop-blur-xl'
       style={{ background: 'rgba(15,14,6,0.85)' }}
     >
-      <div className='mx-auto flex h-14 max-w-7xl items-center justify-between px-6'>
+      <div className='mx-auto flex h-14 max-w-7xl items-center justify-between'>
         <Link href='/' className='flex items-center gap-2.5 no-underline'>
           <div className='flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-amber-400 to-orange-600 text-sm shadow-lg shadow-amber-900/30'>
             🎙️

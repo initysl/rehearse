@@ -79,6 +79,14 @@ export interface CreateScenarioResponse {
   scenario: Scenario;
 }
 
+export interface UpdateScenarioResponse {
+  scenario: Scenario;
+}
+
+export interface DeleteScenarioResponse {
+  deleted: boolean;
+}
+
 export interface ListScenariosResponse {
   scenarios: Scenario[];
 }

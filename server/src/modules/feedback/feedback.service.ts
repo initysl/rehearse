@@ -35,6 +35,71 @@ interface MessageRow {
   created_at: Date;
 }
 
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+const isRetryableFeedbackError = (error: unknown): boolean => {
+  const message = (error as Error)?.message?.toLowerCase?.() || "";
+  return (
+    message.includes("connection") ||
+    message.includes("timeout") ||
+    message.includes("econn") ||
+    message.includes("enotfound") ||
+    message.includes("rate limit") ||
+    message.includes("too many requests") ||
+    message.includes("deadlock")
+  );
+};
+
+const runFeedbackStageWithRetry = async <T>(input: {
+  stage: "context" | "transcript" | "generate" | "persist";
+  sessionId: string;
+  userId: string;
+  operation: () => Promise<T>;
+  retries?: number;
+  retryDelayMs?: number;
+}): Promise<T> => {
+  const retries = input.retries ?? 1;
+  const retryDelayMs = input.retryDelayMs ?? 400;
+  let attempt = 0;
+
+  while (true) {
+    attempt += 1;
+    logInfo("feedback.stage.begin", {
+      stage: input.stage,
+      sessionId: input.sessionId,
+      userId: input.userId,
+      attempt,
+    });
+
+    try {
+      const result = await input.operation();
+      logInfo("feedback.stage.success", {
+        stage: input.stage,
+        sessionId: input.sessionId,
+        userId: input.userId,
+        attempt,
+      });
+      return result;
+    } catch (error) {
+      logWarn("feedback.stage.failed", {
+        stage: input.stage,
+        sessionId: input.sessionId,
+        userId: input.userId,
+        attempt,
+        retries,
+        error: (error as Error).message,
+      });
+
+      if (attempt > retries || !isRetryableFeedbackError(error)) {
+        throw error;
+      }
+
+      await sleep(retryDelayMs * attempt);
+    }
+  }
+};
+
 const mapFeedback = (row: FeedbackRow): FeedbackDto => {
   const parsed = feedbackResultSchema.parse(row.full_feedback);
   return {
@@ -353,7 +418,13 @@ export const ensureSessionFeedback = async (input: {
     allowAutoGenerate: Boolean(input.allowAutoGenerate),
   });
 
-  const context = await getSessionContext(input.userId, input.sessionId);
+  const context = await runFeedbackStageWithRetry({
+    stage: "context",
+    sessionId: input.sessionId,
+    userId: input.userId,
+    retries: 0,
+    operation: () => getSessionContext(input.userId, input.sessionId),
+  });
   if (!context) throw createHttpError(404, "Session not found");
 
   const existing = await getExistingFeedback(input.sessionId);
@@ -378,14 +449,40 @@ export const ensureSessionFeedback = async (input: {
     throw createHttpError(409, "Feedback is available only for completed sessions");
   }
 
-  const transcript = await getSessionTranscript(input.sessionId);
-  const payload = await generateFeedbackPayload(context.scenario_goal, transcript);
+  const transcript = await runFeedbackStageWithRetry({
+    stage: "transcript",
+    sessionId: input.sessionId,
+    userId: input.userId,
+    retries: 1,
+    operation: () => getSessionTranscript(input.sessionId),
+  });
 
-  const feedback = await persistFeedback({
-    sessionId: context.session_id,
-    scenarioId: context.scenario_id,
-    userId: context.user_id,
-    feedback: payload,
+  logInfo("feedback.transcript.loaded", {
+    sessionId: input.sessionId,
+    userId: input.userId,
+    messageCount: transcript.length,
+  });
+
+  const payload = await runFeedbackStageWithRetry({
+    stage: "generate",
+    sessionId: input.sessionId,
+    userId: input.userId,
+    retries: 1,
+    operation: () => generateFeedbackPayload(context.scenario_goal, transcript),
+  });
+
+  const feedback = await runFeedbackStageWithRetry({
+    stage: "persist",
+    sessionId: input.sessionId,
+    userId: input.userId,
+    retries: 2,
+    operation: () =>
+      persistFeedback({
+        sessionId: context.session_id,
+        scenarioId: context.scenario_id,
+        userId: context.user_id,
+        feedback: payload,
+      }),
   });
 
   logInfo("feedback.ensure.generated", {

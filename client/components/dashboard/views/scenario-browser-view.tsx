@@ -3,11 +3,13 @@
 import { FormEvent, useState } from 'react';
 import type { CreateCustomScenarioInput, Scenario } from '@/lib/api/types';
 import {
+  FiEdit2,
   FiFilter,
   FiPlus,
   FiPlayCircle,
   FiRefreshCw,
   FiSearch,
+  FiTrash2,
   FiX,
 } from 'react-icons/fi';
 import { Panel } from '../panel';
@@ -22,6 +24,8 @@ type ScenarioBrowserViewProps = {
   isLoading: boolean;
   isFetching: boolean;
   isCreatingScenario: boolean;
+  isUpdatingScenario: boolean;
+  isDeletingScenario: boolean;
   errorMessage?: string;
   createScenarioErrorMessage?: string;
   onSearchChange: (value: string) => void;
@@ -31,6 +35,11 @@ type ScenarioBrowserViewProps = {
   onSelectScenario: (id: string) => void;
   onStartPractice: () => void;
   onCreateScenario: (payload: CreateCustomScenarioInput) => Promise<void>;
+  onUpdateScenario: (input: {
+    scenarioId: string;
+    payload: CreateCustomScenarioInput;
+  }) => Promise<void>;
+  onDeleteScenario: (scenarioId: string) => Promise<void>;
 };
 
 const categories: ScenarioCategoryFilter[] = [
@@ -93,6 +102,8 @@ export function ScenarioBrowserView({
   isLoading,
   isFetching,
   isCreatingScenario,
+  isUpdatingScenario,
+  isDeletingScenario,
   errorMessage,
   createScenarioErrorMessage,
   onSearchChange,
@@ -102,8 +113,11 @@ export function ScenarioBrowserView({
   onSelectScenario,
   onStartPractice,
   onCreateScenario,
+  onUpdateScenario,
+  onDeleteScenario,
 }: ScenarioBrowserViewProps) {
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingScenarioId, setEditingScenarioId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [formState, setFormState] = useState<ScenarioFormState>(
     defaultScenarioFormState,
@@ -116,72 +130,119 @@ export function ScenarioBrowserView({
     setFormState((previous) => ({ ...previous, [key]: value }));
   };
 
-  const handleCreateScenario = async (
+  const getModifier = (
+    scenario: Scenario,
+    level: 'cooperative' | 'neutral' | 'resistant' | 'hostile',
+  ): string =>
+    scenario.difficultyVariants.find((variant) => variant.level === level)
+      ?.behaviorModifier || '';
+
+  const openCreateScenarioForm = () => {
+    setShowCreateForm(true);
+    setEditingScenarioId(null);
+    setFormError(null);
+    setFormState(defaultScenarioFormState());
+  };
+
+  const openEditScenarioForm = (scenario: Scenario) => {
+    setShowCreateForm(true);
+    setEditingScenarioId(scenario.id);
+    setFormError(null);
+    setFormState({
+      title: scenario.title,
+      category: scenario.category,
+      description: scenario.description,
+      characterName: scenario.characterProfile.name,
+      characterRole: scenario.characterProfile.role,
+      personalityCsv: scenario.characterProfile.personality.join(', '),
+      goalsCsv: scenario.characterProfile.goals.join(', '),
+      emotionalState: scenario.characterProfile.emotionalState,
+      cooperativeModifier: getModifier(scenario, 'cooperative'),
+      neutralModifier: getModifier(scenario, 'neutral'),
+      resistantModifier: getModifier(scenario, 'resistant'),
+      hostileModifier: getModifier(scenario, 'hostile'),
+    });
+  };
+
+  const buildScenarioPayload = (): CreateCustomScenarioInput => ({
+    title: formState.title.trim(),
+    category: formState.category,
+    description: formState.description.trim(),
+    characterProfile: {
+      name: formState.characterName.trim(),
+      role: formState.characterRole.trim(),
+      personality: parseCsvList(formState.personalityCsv),
+      goals: parseCsvList(formState.goalsCsv),
+      emotionalState: formState.emotionalState.trim(),
+    },
+    difficultyVariants: [
+      {
+        level: 'cooperative',
+        behaviorModifier: formState.cooperativeModifier.trim(),
+      },
+      {
+        level: 'neutral',
+        behaviorModifier: formState.neutralModifier.trim(),
+      },
+      {
+        level: 'resistant',
+        behaviorModifier: formState.resistantModifier.trim(),
+      },
+      {
+        level: 'hostile',
+        behaviorModifier: formState.hostileModifier.trim(),
+      },
+    ],
+  });
+
+  const handleUpsertScenario = async (
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> => {
     event.preventDefault();
     setFormError(null);
 
-    const personality = parseCsvList(formState.personalityCsv);
-    const goals = parseCsvList(formState.goalsCsv);
+    const payload = buildScenarioPayload();
 
-    if (personality.length === 0) {
+    if (payload.characterProfile.personality.length === 0) {
       setFormError('Add at least one personality trait.');
       return;
     }
 
-    if (goals.length === 0) {
+    if (payload.characterProfile.goals.length === 0) {
       setFormError('Add at least one scenario goal.');
       return;
     }
 
     if (
-      !formState.cooperativeModifier.trim() ||
-      !formState.neutralModifier.trim() ||
-      !formState.resistantModifier.trim() ||
-      !formState.hostileModifier.trim()
+      !payload.difficultyVariants[0].behaviorModifier ||
+      !payload.difficultyVariants[1].behaviorModifier ||
+      !payload.difficultyVariants[2].behaviorModifier ||
+      !payload.difficultyVariants[3].behaviorModifier
     ) {
       setFormError('Provide behavior modifiers for all 4 difficulty levels.');
       return;
     }
 
     try {
-      await onCreateScenario({
-        title: formState.title.trim(),
-        category: formState.category,
-        description: formState.description.trim(),
-        characterProfile: {
-          name: formState.characterName.trim(),
-          role: formState.characterRole.trim(),
-          personality,
-          goals,
-          emotionalState: formState.emotionalState.trim(),
-        },
-        difficultyVariants: [
-          {
-            level: 'cooperative',
-            behaviorModifier: formState.cooperativeModifier.trim(),
-          },
-          {
-            level: 'neutral',
-            behaviorModifier: formState.neutralModifier.trim(),
-          },
-          {
-            level: 'resistant',
-            behaviorModifier: formState.resistantModifier.trim(),
-          },
-          {
-            level: 'hostile',
-            behaviorModifier: formState.hostileModifier.trim(),
-          },
-        ],
-      });
+      if (editingScenarioId) {
+        await onUpdateScenario({
+          scenarioId: editingScenarioId,
+          payload,
+        });
+      } else {
+        await onCreateScenario(payload);
+      }
 
       setShowCreateForm(false);
+      setEditingScenarioId(null);
       setFormState(defaultScenarioFormState());
       setFormError(null);
     } catch {
-      setFormError('Could not create the scenario. Please review the inputs.');
+      setFormError(
+        editingScenarioId
+          ? 'Could not update the scenario. Please review the inputs.'
+          : 'Could not create the scenario. Please review the inputs.',
+      );
     }
   };
 
@@ -193,7 +254,16 @@ export function ScenarioBrowserView({
         <div className='inline-flex items-center gap-2'>
           <button
             type='button'
-            onClick={() => setShowCreateForm((previous) => !previous)}
+            onClick={() => {
+              if (showCreateForm) {
+                setShowCreateForm(false);
+                setEditingScenarioId(null);
+                setFormState(defaultScenarioFormState());
+                setFormError(null);
+                return;
+              }
+              openCreateScenarioForm();
+            }}
             className='inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/6 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/80'
           >
             {showCreateForm ? <FiX size={12} /> : <FiPlus size={12} />}
@@ -213,12 +283,12 @@ export function ScenarioBrowserView({
       {showCreateForm ? (
         <form
           onSubmit={(event) => {
-            void handleCreateScenario(event);
+            void handleUpsertScenario(event);
           }}
           className='mb-4 grid gap-3 rounded-xl border border-white/15 bg-[#141414] p-4'
         >
           <p className='text-xs font-semibold uppercase tracking-[0.12em] text-white/55'>
-            Create Custom Scenario
+            {editingScenarioId ? 'Edit Custom Scenario' : 'Create Custom Scenario'}
           </p>
 
           <div className='grid gap-3 md:grid-cols-2'>
@@ -353,10 +423,16 @@ export function ScenarioBrowserView({
           <div>
             <button
               type='submit'
-              disabled={isCreatingScenario}
+              disabled={isCreatingScenario || isUpdatingScenario}
               className='inline-flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-500 to-orange-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#120f07] disabled:cursor-not-allowed disabled:opacity-60'
             >
-              {isCreatingScenario ? 'Creating...' : 'Create scenario'}
+              {editingScenarioId
+                ? isUpdatingScenario
+                  ? 'Saving...'
+                  : 'Save changes'
+                : isCreatingScenario
+                  ? 'Creating...'
+                  : 'Create scenario'}
             </button>
           </div>
         </form>
@@ -407,27 +483,62 @@ export function ScenarioBrowserView({
         {scenarios.map((scenario) => {
           const isActive = selectedScenarioId === scenario.id;
           return (
-            <button
+            <div
               key={scenario.id}
-              type='button'
-              onClick={() => onSelectScenario(scenario.id)}
-              className={`rounded-xl border p-4 text-left transition ${
+              className={`rounded-xl border p-3 transition ${
                 isActive
                   ? 'border-amber-400/45 bg-amber-400/10'
                   : 'border-white/15 bg-[#141414] hover:border-white/25'
               }`}
             >
-              <p className='text-xs uppercase tracking-[0.12em] text-white/45'>
-                {scenario.category}
-                {scenario.isCustom ? ' • custom' : ''}
-              </p>
-              <p className='mt-1 text-sm font-semibold text-white'>
-                {scenario.title}
-              </p>
-              <p className='mt-2 text-xs text-white/55'>
-                {scenario.description}
-              </p>
-            </button>
+              <button
+                type='button'
+                onClick={() => onSelectScenario(scenario.id)}
+                className='w-full text-left'
+              >
+                <p className='text-xs uppercase tracking-[0.12em] text-white/45'>
+                  {scenario.category}
+                  {scenario.isCustom ? ' • custom' : ''}
+                </p>
+                <p className='mt-1 text-sm font-semibold text-white'>
+                  {scenario.title}
+                </p>
+                <p className='mt-2 text-xs text-white/55'>
+                  {scenario.description}
+                </p>
+              </button>
+
+              {scenario.isCustom ? (
+                <div className='mt-3 flex items-center gap-2'>
+                  <button
+                    type='button'
+                    onClick={() => openEditScenarioForm(scenario)}
+                    disabled={isUpdatingScenario}
+                    className='inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/75 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50'
+                  >
+                    <FiEdit2 size={11} />
+                    Edit
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          'Delete this custom scenario? This cannot be undone.',
+                        )
+                      ) {
+                        void onDeleteScenario(scenario.id);
+                      }
+                    }}
+                    disabled={isDeletingScenario}
+                    className='inline-flex items-center gap-1 rounded-lg border border-rose-400/30 bg-rose-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-rose-100 transition hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-50'
+                  >
+                    <FiTrash2 size={11} />
+                    Delete
+                  </button>
+                </div>
+              ) : null}
+            </div>
           );
         })}
       </div>

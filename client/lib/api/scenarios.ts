@@ -2,8 +2,10 @@ import { apiRequest } from "./client";
 import {
   CreateCustomScenarioInput,
   CreateScenarioResponse,
+  DeleteScenarioResponse,
   ListScenariosResponse,
   ScenarioCategory,
+  UpdateScenarioResponse,
 } from "./types";
 
 export interface ListScenariosQuery {
@@ -35,6 +37,28 @@ export const createCustomScenario = (
   return apiRequest<CreateScenarioResponse>("/scenarios/custom", {
     method: "POST",
     body: payload,
+    accessToken,
+  });
+};
+
+export const updateCustomScenario = (
+  scenarioId: string,
+  payload: CreateCustomScenarioInput,
+  accessToken?: string | null
+) => {
+  return apiRequest<UpdateScenarioResponse>(`/scenarios/custom/${scenarioId}`, {
+    method: "PATCH",
+    body: payload,
+    accessToken,
+  });
+};
+
+export const deleteCustomScenario = (
+  scenarioId: string,
+  accessToken?: string | null
+) => {
+  return apiRequest<DeleteScenarioResponse>(`/scenarios/custom/${scenarioId}`, {
+    method: "DELETE",
     accessToken,
   });
 };

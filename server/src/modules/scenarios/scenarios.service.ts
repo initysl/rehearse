@@ -3,6 +3,7 @@ import {
   CreateCustomScenarioInput,
   ListScenariosQuery,
   ScenarioDto,
+  UpdateCustomScenarioInput,
 } from "./scenarios.types";
 
 interface ScenarioRow {
@@ -145,4 +146,74 @@ export const createCustomScenario = async (
   );
 
   return mapScenario(result.rows[0]);
+};
+
+export const updateCustomScenario = async (
+  userId: string,
+  scenarioId: string,
+  payload: UpdateCustomScenarioInput
+): Promise<ScenarioDto | null> => {
+  const result = await db.query<ScenarioRow>(
+    `UPDATE public.scenarios
+     SET
+       title = $3,
+       category = $4,
+       description = $5,
+       character_profile = $6::jsonb,
+       difficulty_variants = $7::jsonb
+     WHERE id = $1
+       AND is_custom = TRUE
+       AND created_by = $2
+     RETURNING
+       id,
+       title,
+       category,
+       description,
+       character_profile,
+       difficulty_variants,
+       is_custom,
+       created_by,
+       play_count,
+       created_at`,
+    [
+      scenarioId,
+      userId,
+      payload.title,
+      payload.category,
+      payload.description,
+      JSON.stringify(payload.characterProfile),
+      JSON.stringify(payload.difficultyVariants),
+    ]
+  );
+
+  if (!result.rows[0]) return null;
+  return mapScenario(result.rows[0]);
+};
+
+export const deleteCustomScenario = async (
+  userId: string,
+  scenarioId: string
+): Promise<"deleted" | "not_found" | "in_use"> => {
+  const inUseResult = await db.query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count
+     FROM public.sessions
+     WHERE scenario_id = $1
+       AND user_id = $2`,
+    [scenarioId, userId]
+  );
+
+  if (Number(inUseResult.rows[0]?.count || "0") > 0) {
+    return "in_use";
+  }
+
+  const result = await db.query<{ id: string }>(
+    `DELETE FROM public.scenarios
+     WHERE id = $1
+       AND is_custom = TRUE
+       AND created_by = $2
+     RETURNING id`,
+    [scenarioId, userId]
+  );
+
+  return result.rows[0] ? "deleted" : "not_found";
 };

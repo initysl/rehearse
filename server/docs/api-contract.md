@@ -28,6 +28,10 @@ Base URL (local): `http://localhost:5000`
     - `title`, `category`, `description`
     - `characterProfile { name, role, personality[], goals[], emotionalState }`
     - `difficultyVariants[] { level, behaviorModifier }`
+- `PATCH /scenarios/custom/:id`
+  - Body: same as `POST /scenarios/custom` (full replacement of custom scenario)
+- `DELETE /scenarios/custom/:id`
+  - Notes: Returns `409` if scenario already has sessions (to preserve history integrity).
 
 ## Sessions (Protected)
 

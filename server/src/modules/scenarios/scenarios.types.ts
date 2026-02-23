@@ -61,9 +61,12 @@ export const createCustomScenarioSchema = z.object({
   difficultyVariants: z.array(difficultyVariantSchema).min(1).max(4),
 });
 
+export const updateCustomScenarioSchema = createCustomScenarioSchema;
+
 export type ScenarioCategory = z.infer<typeof categorySchema>;
 export type ScenarioDifficultyLevel = z.infer<typeof difficultyLevelSchema>;
 export type CreateCustomScenarioInput = z.infer<typeof createCustomScenarioSchema>;
+export type UpdateCustomScenarioInput = z.infer<typeof updateCustomScenarioSchema>;
 export type ListScenariosQuery = z.infer<typeof listScenariosQuerySchema>;
 
 export interface ScenarioDto {

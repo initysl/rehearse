@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FiFacebook, FiLinkedin, FiSend, FiTwitter } from 'react-icons/fi';
+import { FiGithub, FiInstagram, FiTwitter } from 'react-icons/fi';
 
 const legalLinks = [
   { label: 'Terms', href: '/terms' },
@@ -7,22 +7,21 @@ const legalLinks = [
 ];
 
 const socialLinks = [
-  { label: 'X', href: 'https://x.com', icon: FiTwitter },
-  { label: 'LinkedIn', href: 'https://www.linkedin.com', icon: FiLinkedin },
-  { label: 'Telegram', href: 'https://t.me', icon: FiSend },
-  { label: 'Facebook', href: 'https://www.facebook.com', icon: FiFacebook },
+  { label: 'Github', href: 'https://www.github.com/initysl', icon: FiGithub },
+  { label: 'X', href: 'https://x.com/initysl', icon: FiTwitter },
+  { label: 'Instagram', href: 'https://t.me', icon: FiInstagram },
 ];
 
 export function LandingFooter() {
   return (
     <footer className='border-t border-white/5 px-6 py-8'>
-      <div className='mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-5'>
+      <div className='mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-5 text-white'>
         <div className='flex flex-wrap gap-6'>
           {legalLinks.map((item) => (
             <Link
               key={item.label}
               href={item.href}
-              className='text-[12px] font-medium uppercase tracking-wider text-white/25 no-underline transition hover:text-white/55'
+              className='text-[12px] font-medium uppercase tracking-wider no-underline transition hover:text-white/55'
             >
               {item.label}
             </Link>
@@ -44,8 +43,8 @@ export function LandingFooter() {
           ))}
         </div>
 
-        <p className='w-full text-center text-[11px] text-white/18 md:w-auto'>
-          © 2026 Rehearse. All rights reserved.
+        <p className='w-full text-center text-[12px] font-medium uppercase md:w-auto'>
+          Copyright {new Date().getFullYear()} Rehearse. All rights reserved.
         </p>
       </div>
     </footer>
