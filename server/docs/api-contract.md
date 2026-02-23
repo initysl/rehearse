@@ -35,6 +35,9 @@ Base URL (local): `http://localhost:5000`
   - Body: `{ "scenarioId": uuid, "difficultyLevel": "cooperative|neutral|resistant|hostile", "customContext"?: string }`
 - `GET /sessions/history`
   - Query: `status?`, `limit?`, `offset?`
+- `DELETE /sessions/history`
+  - Query: `scope?=non_active|completed|abandoned|all`, `limit?`
+  - Response: `{ "deletedCount": number }`
 - `GET /sessions/:id`
 - `POST /sessions/:id/message`
   - Body: `{ "content": string }`

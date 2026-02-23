@@ -3,12 +3,14 @@ import { ZodError } from "zod";
 import { enqueueFeedbackGeneration } from "../../jobs/feedback.queue";
 import { logError, logInfo } from "../../utils/logger";
 import {
+  clearSessionHistory,
   endSessionById,
   getSessionDetailById,
   getSessionHistory,
   startSession,
 } from "./sessions.service";
 import {
+  clearSessionHistoryQuerySchema,
   endSessionSchema,
   listSessionHistoryQuerySchema,
   sessionIdParamSchema,
@@ -134,6 +136,24 @@ export const endSession = async (
         feedbackGenerationError: "Feedback generation failed. You can retry via GET /feedback/:sessionId.",
       });
     }
+  } catch (error) {
+    if (error instanceof ZodError) return handleZodError(error, next);
+    return next(error as Error);
+  }
+};
+
+export const clearHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user?.userId) return res.status(401).json({ error: "Unauthorized" });
+
+    const query = clearSessionHistoryQuerySchema.parse(req.query);
+    const deletedCount = await clearSessionHistory(req.user.userId, query);
+
+    return res.status(200).json({ deletedCount });
   } catch (error) {
     if (error instanceof ZodError) return handleZodError(error, next);
     return next(error as Error);

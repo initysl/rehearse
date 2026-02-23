@@ -72,6 +72,9 @@ type TranscriptRow = {
   text: string;
 };
 
+const normalizeText = (value: string): string =>
+  value.trim().replace(/\s+/g, ' ').toLowerCase();
+
 export function ConversationView({
   activeSessionId,
   messages,
@@ -102,14 +105,48 @@ export function ConversationView({
   const transcriptRows = useMemo<TranscriptRow[]>(() => {
     return messages
       .filter(
-        (message) => message.role === 'user' || message.role === 'assistant',
+        (
+          message,
+        ): message is SessionMessage & { role: 'user' | 'assistant' } =>
+          message.role === 'user' || message.role === 'assistant',
       )
       .map((message) => ({
         id: message.id,
-        role: message.role as 'user' | 'assistant',
+        role: message.role,
         text: message.content,
       }));
   }, [messages]);
+
+  const lastPersistedUserText = useMemo(() => {
+    for (let index = transcriptRows.length - 1; index >= 0; index -= 1) {
+      if (transcriptRows[index].role === 'user') {
+        return transcriptRows[index].text;
+      }
+    }
+    return '';
+  }, [transcriptRows]);
+
+  const lastPersistedAssistantText = useMemo(() => {
+    for (let index = transcriptRows.length - 1; index >= 0; index -= 1) {
+      if (transcriptRows[index].role === 'assistant') {
+        return transcriptRows[index].text;
+      }
+    }
+    return '';
+  }, [transcriptRows]);
+
+  const shouldShowLiveUserTranscript = useMemo(() => {
+    if (!voiceTranscript.trim()) return false;
+    return normalizeText(voiceTranscript) !== normalizeText(lastPersistedUserText);
+  }, [lastPersistedUserText, voiceTranscript]);
+
+  const shouldShowLiveAssistantTranscript = useMemo(() => {
+    if (!voiceAssistantText.trim() || !isAiSpeaking) return false;
+    return (
+      normalizeText(voiceAssistantText) !==
+      normalizeText(lastPersistedAssistantText)
+    );
+  }, [isAiSpeaking, lastPersistedAssistantText, voiceAssistantText]);
 
   useEffect(() => {
     if (!voiceAssistantText.trim()) {
@@ -288,7 +325,7 @@ export function ConversationView({
               </div>
             ))}
 
-            {voiceTranscript ? (
+            {shouldShowLiveUserTranscript ? (
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -301,7 +338,7 @@ export function ConversationView({
               </motion.div>
             ) : null}
 
-            {voiceAssistantText && isAiSpeaking ? (
+            {shouldShowLiveAssistantTranscript ? (
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}

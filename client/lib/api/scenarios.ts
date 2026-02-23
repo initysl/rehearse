@@ -1,8 +1,13 @@
 import { apiRequest } from "./client";
-import { ListScenariosResponse } from "./types";
+import {
+  CreateCustomScenarioInput,
+  CreateScenarioResponse,
+  ListScenariosResponse,
+  ScenarioCategory,
+} from "./types";
 
 export interface ListScenariosQuery {
-  category?: "work" | "health" | "family" | "social" | "financial" | "legal";
+  category?: ScenarioCategory;
   search?: string;
   customOnly?: boolean;
   limit?: number;
@@ -19,6 +24,17 @@ export const listScenarios = (
 
   return apiRequest<ListScenariosResponse>("/scenarios", {
     query: queryParams,
+    accessToken,
+  });
+};
+
+export const createCustomScenario = (
+  payload: CreateCustomScenarioInput,
+  accessToken?: string | null
+) => {
+  return apiRequest<CreateScenarioResponse>("/scenarios/custom", {
+    method: "POST",
+    body: payload,
     accessToken,
   });
 };

@@ -38,9 +38,26 @@ export const listSessionHistoryQuerySchema = z.object({
   status: sessionStatusSchema.optional(),
 });
 
+const clearHistoryScopeSchema = z.enum([
+  "non_active",
+  "completed",
+  "abandoned",
+  "all",
+]);
+
+export const clearSessionHistoryQuerySchema = z.object({
+  scope: clearHistoryScopeSchema.optional().default("non_active"),
+  limit: z
+    .string()
+    .regex(/^\d+$/)
+    .optional()
+    .transform((value) => (value ? Math.min(parseInt(value, 10), 500) : 100)),
+});
+
 export type StartSessionInput = z.infer<typeof startSessionSchema>;
 export type EndSessionInput = z.infer<typeof endSessionSchema>;
 export type SessionHistoryQuery = z.infer<typeof listSessionHistoryQuerySchema>;
+export type ClearSessionHistoryQuery = z.infer<typeof clearSessionHistoryQuerySchema>;
 
 export interface SessionDto {
   id: string;

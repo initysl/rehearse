@@ -1,6 +1,7 @@
 import { getStoredAccessToken } from "../auth-token";
 import { apiRequest, getApiBaseUrl, ApiError } from "./client";
 import {
+  ClearSessionHistoryResponse,
   EndSessionInput,
   EndSessionResponse,
   SessionDetailResponse,
@@ -13,6 +14,11 @@ export interface SessionHistoryQuery {
   status?: "active" | "completed" | "abandoned";
   limit?: number;
   offset?: number;
+}
+
+export interface ClearSessionHistoryQuery {
+  scope?: "non_active" | "completed" | "abandoned" | "all";
+  limit?: number;
 }
 
 export const startSession = (
@@ -35,6 +41,21 @@ export const getSessionHistory = (
   };
 
   return apiRequest<SessionHistoryResponse>("/sessions/history", {
+    query: queryParams,
+    accessToken,
+  });
+};
+
+export const clearSessionHistory = (
+  query: ClearSessionHistoryQuery = {},
+  accessToken?: string | null
+) => {
+  const queryParams: Record<string, string | number | boolean | undefined> = {
+    ...query,
+  };
+
+  return apiRequest<ClearSessionHistoryResponse>("/sessions/history", {
+    method: "DELETE",
     query: queryParams,
     accessToken,
   });

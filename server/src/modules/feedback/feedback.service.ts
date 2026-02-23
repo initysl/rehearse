@@ -66,6 +66,7 @@ const getExistingFeedback = async (
       generated_at
      FROM public.feedback
      WHERE session_id = $1
+     ORDER BY generated_at DESC
      LIMIT 1`,
     [sessionId]
   );
@@ -178,35 +179,64 @@ const persistFeedback = async (input: {
     });
 
     await client.query("BEGIN");
-
-    const stored = await client.query<FeedbackRow>(
-      `INSERT INTO public.feedback (
-        session_id,
-        goal_achieved,
-        confidence_score,
-        full_feedback
-      )
-      VALUES ($1, $2, $3, $4::jsonb)
-      ON CONFLICT (session_id) DO UPDATE
-      SET
-        goal_achieved = EXCLUDED.goal_achieved,
-        confidence_score = EXCLUDED.confidence_score,
-        full_feedback = EXCLUDED.full_feedback,
-        generated_at = NOW()
-      RETURNING
-        id,
-        session_id,
-        goal_achieved,
-        confidence_score,
-        full_feedback,
-        generated_at`,
-      [
-        input.sessionId,
-        input.feedback.goalAchieved,
-        input.feedback.confidenceScore,
-        JSON.stringify(input.feedback),
-      ]
+    const existingFeedback = await client.query<{ id: string }>(
+      `SELECT id
+       FROM public.feedback
+       WHERE session_id = $1
+       ORDER BY generated_at DESC
+       LIMIT 1
+       FOR UPDATE`,
+      [input.sessionId]
     );
+
+    let stored: { rows: FeedbackRow[] };
+    if (existingFeedback.rows[0]) {
+      stored = await client.query<FeedbackRow>(
+        `UPDATE public.feedback
+         SET
+           goal_achieved = $2,
+           confidence_score = $3,
+           full_feedback = $4::jsonb,
+           generated_at = NOW()
+         WHERE id = $1
+         RETURNING
+           id,
+           session_id,
+           goal_achieved,
+           confidence_score,
+           full_feedback,
+           generated_at`,
+        [
+          existingFeedback.rows[0].id,
+          input.feedback.goalAchieved,
+          input.feedback.confidenceScore,
+          JSON.stringify(input.feedback),
+        ]
+      );
+    } else {
+      stored = await client.query<FeedbackRow>(
+        `INSERT INTO public.feedback (
+          session_id,
+          goal_achieved,
+          confidence_score,
+          full_feedback
+        )
+        VALUES ($1, $2, $3, $4::jsonb)
+        RETURNING
+          id,
+          session_id,
+          goal_achieved,
+          confidence_score,
+          full_feedback,
+          generated_at`,
+        [
+          input.sessionId,
+          input.feedback.goalAchieved,
+          input.feedback.confidenceScore,
+          JSON.stringify(input.feedback),
+        ]
+      );
+    }
 
     const completedCountResult = await client.query<{ count: string }>(
       `SELECT COUNT(*)::text AS count
@@ -219,28 +249,52 @@ const persistFeedback = async (input: {
 
     const completedCount = Number(completedCountResult.rows[0]?.count || "1");
 
-    await client.query(
-      `INSERT INTO public.progress_snapshots (
-        session_id,
-        user_id,
-        scenario_id,
-        confidence_score,
-        session_count
-      )
-      VALUES ($1, $2, $3, $4, $5)
-      ON CONFLICT (session_id) DO UPDATE
-      SET
-        confidence_score = EXCLUDED.confidence_score,
-        session_count = EXCLUDED.session_count,
-        recorded_at = NOW()`,
-      [
-        input.sessionId,
-        input.userId,
-        input.scenarioId,
-        input.feedback.confidenceScore,
-        completedCount,
-      ]
+    const existingProgressSnapshot = await client.query<{ id: string }>(
+      `SELECT id
+       FROM public.progress_snapshots
+       WHERE session_id = $1
+       LIMIT 1
+       FOR UPDATE`,
+      [input.sessionId]
     );
+
+    if (existingProgressSnapshot.rows[0]) {
+      await client.query(
+        `UPDATE public.progress_snapshots
+         SET
+           user_id = $2,
+           scenario_id = $3,
+           confidence_score = $4,
+           session_count = $5,
+           recorded_at = NOW()
+         WHERE id = $1`,
+        [
+          existingProgressSnapshot.rows[0].id,
+          input.userId,
+          input.scenarioId,
+          input.feedback.confidenceScore,
+          completedCount,
+        ]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO public.progress_snapshots (
+          session_id,
+          user_id,
+          scenario_id,
+          confidence_score,
+          session_count
+        )
+        VALUES ($1, $2, $3, $4, $5)`,
+        [
+          input.sessionId,
+          input.userId,
+          input.scenarioId,
+          input.feedback.confidenceScore,
+          completedCount,
+        ]
+      );
+    }
 
     await client.query("COMMIT");
     logInfo("feedback.persist.success", {

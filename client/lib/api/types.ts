@@ -56,6 +56,29 @@ export interface Scenario {
   createdAt: string;
 }
 
+export type ScenarioCategory = Scenario["category"];
+
+export interface CreateCustomScenarioInput {
+  title: string;
+  category: ScenarioCategory;
+  description: string;
+  characterProfile: {
+    name: string;
+    role: string;
+    personality: string[];
+    goals: string[];
+    emotionalState: string;
+  };
+  difficultyVariants: Array<{
+    level: DifficultyLevel;
+    behaviorModifier: string;
+  }>;
+}
+
+export interface CreateScenarioResponse {
+  scenario: Scenario;
+}
+
 export interface ListScenariosResponse {
   scenarios: Scenario[];
 }
@@ -122,6 +145,10 @@ export interface EndSessionResponse {
 
 export interface SessionHistoryResponse {
   sessions: SessionHistoryItem[];
+}
+
+export interface ClearSessionHistoryResponse {
+  deletedCount: number;
 }
 
 export interface FeedbackResult {

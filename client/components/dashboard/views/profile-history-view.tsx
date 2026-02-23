@@ -8,6 +8,8 @@ type ProfileHistoryViewProps = {
   totalScenarios: number;
   historyItems: SessionHistoryItem[];
   onSelectSession: (sessionId: string) => void;
+  onClearRecent: () => Promise<void>;
+  isClearingRecent: boolean;
 };
 
 export function ProfileHistoryView({
@@ -16,6 +18,8 @@ export function ProfileHistoryView({
   totalScenarios,
   historyItems,
   onSelectSession,
+  onClearRecent,
+  isClearingRecent,
 }: ProfileHistoryViewProps) {
   return (
     <Panel
@@ -49,10 +53,22 @@ export function ProfileHistoryView({
       </div>
 
       <div className='mt-4'>
-        <p className='mb-2 inline-flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-white/45'>
-          <FiClock size={12} />
-          Recent Sessions
-        </p>
+        <div className='mb-2 flex items-center justify-between gap-3'>
+          <p className='inline-flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-white/45'>
+            <FiClock size={12} />
+            Recent Sessions
+          </p>
+          <button
+            type='button'
+            onClick={() => {
+              void onClearRecent();
+            }}
+            disabled={isClearingRecent || historyItems.length === 0}
+            className='rounded-lg border border-white/20 bg-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50'
+          >
+            {isClearingRecent ? 'Clearing...' : 'Clear recent'}
+          </button>
+        </div>
 
         <div className='space-y-2'>
           {historyItems.length ? (

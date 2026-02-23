@@ -1,5 +1,6 @@
 import { db } from "../../config/db";
 import {
+  ClearSessionHistoryQuery,
   EndSessionInput,
   SessionDetail,
   SessionDto,
@@ -211,6 +212,42 @@ export const getSessionHistory = async (
     scenarioCategory: row.scenario_category,
     messageCount: Number(row.message_count),
   }));
+};
+
+export const clearSessionHistory = async (
+  userId: string,
+  query: ClearSessionHistoryQuery
+): Promise<number> => {
+  const scopeCondition =
+    query.scope === "all"
+      ? "TRUE"
+      : query.scope === "completed"
+        ? "s.status = 'completed'"
+        : query.scope === "abandoned"
+          ? "s.status = 'abandoned'"
+          : "s.status IN ('completed', 'abandoned')";
+
+  const result = await db.query<{ deleted_count: string }>(
+    `WITH target AS (
+       SELECT s.id
+       FROM public.sessions s
+       WHERE s.user_id = $1
+         AND ${scopeCondition}
+       ORDER BY s.started_at DESC
+       LIMIT $2
+     ),
+     deleted AS (
+       DELETE FROM public.sessions s
+       USING target t
+       WHERE s.id = t.id
+       RETURNING s.id
+     )
+     SELECT COUNT(*)::text AS deleted_count
+     FROM deleted`,
+    [userId, query.limit]
+  );
+
+  return Number(result.rows[0]?.deleted_count || "0");
 };
 
 export const endSessionById = async (

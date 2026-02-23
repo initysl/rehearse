@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiAlertCircle, FiCheckCircle, FiClock, FiZap } from 'react-icons/fi';
 import { ApiError } from '@/lib/api/client';
-import type { DifficultyLevel } from '@/lib/api/types';
+import type { CreateCustomScenarioInput, DifficultyLevel } from '@/lib/api/types';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import type { DashboardView, ScenarioCategoryFilter } from '@/components/dashboard/types';
 import { ConversationView } from '@/components/dashboard/views/conversation-view';
@@ -15,8 +15,12 @@ import { SessionSetupView } from '@/components/dashboard/views/session-setup-vie
 import { useAccessToken } from '@/lib/hooks/use-access-token';
 import { useLogoutMutation, useMeQuery } from '@/lib/hooks/use-auth';
 import { useSessionFeedbackQuery } from '@/lib/hooks/use-feedback';
-import { useScenariosQuery } from '@/lib/hooks/use-scenarios';
 import {
+  useCreateScenarioMutation,
+  useScenariosQuery,
+} from '@/lib/hooks/use-scenarios';
+import {
+  useClearSessionHistoryMutation,
   useEndSessionMutation,
   useSessionDetailQuery,
   useSessionHistoryQuery,
@@ -80,6 +84,8 @@ export default function ConsolePage() {
   const logoutMutation = useLogoutMutation(setAccessToken);
   const startSessionMutation = useStartSessionMutation(accessToken);
   const endSessionMutation = useEndSessionMutation(accessToken);
+  const createScenarioMutation = useCreateScenarioMutation(accessToken);
+  const clearSessionHistoryMutation = useClearSessionHistoryMutation(accessToken);
 
   const scenarioOptions = scenariosQuery.data?.scenarios || [];
   const historyItems = historyQuery.data?.sessions || [];
@@ -228,8 +234,37 @@ export default function ConsolePage() {
     }
   };
 
+  const handleCreateCustomScenario = async (
+    payload: CreateCustomScenarioInput,
+  ): Promise<void> => {
+    const created = await createScenarioMutation.mutateAsync(payload);
+    setSelectedScenarioId(created.scenario.id);
+    setScenarioCustomOnly(false);
+    setScenarioCategory('all');
+    setLastActionMessage('Custom scenario created.');
+    void scenariosQuery.refetch();
+  };
+
+  const handleClearRecent = async (): Promise<void> => {
+    try {
+      const result = await clearSessionHistoryMutation.mutateAsync({
+        scope: 'non_active',
+        limit: 200,
+      });
+      if (result.deletedCount > 0) {
+        setFeedbackSessionId(null);
+      }
+      setLastActionMessage(`Cleared ${result.deletedCount} recent sessions.`);
+    } catch {
+      setLastActionMessage('Could not clear recent sessions right now.');
+    }
+  };
+
   const scenarioErrorMessage = scenariosQuery.error
     ? `Scenario fetch error: ${formatError(scenariosQuery.error)}`
+    : undefined;
+  const createScenarioErrorMessage = createScenarioMutation.error
+    ? `Create scenario error: ${formatError(createScenarioMutation.error)}`
     : undefined;
 
   const sessionErrorMessage = sessionError ? formatError(sessionError) : undefined;
@@ -243,13 +278,16 @@ export default function ConsolePage() {
       customOnly={scenarioCustomOnly}
       isLoading={scenariosQuery.isLoading}
       isFetching={scenariosQuery.isFetching}
+      isCreatingScenario={createScenarioMutation.isPending}
       errorMessage={scenarioErrorMessage}
+      createScenarioErrorMessage={createScenarioErrorMessage}
       onSearchChange={setScenarioSearch}
       onCategoryChange={setScenarioCategory}
       onCustomOnlyChange={setScenarioCustomOnly}
       onRefresh={() => void scenariosQuery.refetch()}
       onSelectScenario={setSelectedScenarioId}
       onStartPractice={() => setActiveView('session-setup')}
+      onCreateScenario={handleCreateCustomScenario}
     />
   );
 
@@ -298,6 +336,8 @@ export default function ConsolePage() {
       completedSessions={completedSessions}
       totalScenarios={scenarioOptions.length}
       historyItems={historyItems}
+      onClearRecent={handleClearRecent}
+      isClearingRecent={clearSessionHistoryMutation.isPending}
       onSelectSession={(sessionId) => {
         setActiveSessionId(sessionId);
         setFeedbackSessionId(sessionId);

@@ -1,7 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { listScenarios, type ListScenariosQuery } from "../api/scenarios";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  createCustomScenario,
+  listScenarios,
+  type ListScenariosQuery,
+} from "../api/scenarios";
+import type { CreateCustomScenarioInput } from "../api/types";
 import { queryKeys } from "../query/keys";
 
 export const useScenariosQuery = (
@@ -13,5 +18,17 @@ export const useScenariosQuery = (
     queryKey: [...queryKeys.scenarios.list(query), accessToken ? "authed" : "anon"],
     queryFn: () => listScenarios(query, accessToken),
     enabled,
+  });
+};
+
+export const useCreateScenarioMutation = (accessToken: string | null) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateCustomScenarioInput) =>
+      createCustomScenario(payload, accessToken),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["scenarios"] });
+    },
   });
 };

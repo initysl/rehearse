@@ -2,11 +2,13 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  clearSessionHistory,
   endSession,
   getSessionDetail,
   getSessionHistory,
   startSession,
   streamSessionMessage,
+  type ClearSessionHistoryQuery,
   type SessionHistoryQuery,
 } from "../api/sessions";
 import type { EndSessionInput, StartSessionInput } from "../api/types";
@@ -58,6 +60,19 @@ export const useEndSessionMutation = (accessToken: string | null) => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.feedback.bySession(variables.sessionId),
       });
+    },
+  });
+};
+
+export const useClearSessionHistoryMutation = (accessToken: string | null) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (query: ClearSessionHistoryQuery = {}) =>
+      clearSessionHistory(query, accessToken),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      void queryClient.invalidateQueries({ queryKey: ["feedback"] });
     },
   });
 };
