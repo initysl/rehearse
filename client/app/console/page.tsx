@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiAlertCircle, FiCheckCircle, FiClock, FiZap } from 'react-icons/fi';
 import { ApiError } from '@/lib/api/client';
@@ -18,7 +18,6 @@ import { useSessionFeedbackQuery } from '@/lib/hooks/use-feedback';
 import { useScenariosQuery } from '@/lib/hooks/use-scenarios';
 import {
   useEndSessionMutation,
-  useSendMessageStreamMutation,
   useSessionDetailQuery,
   useSessionHistoryQuery,
   useStartSessionMutation,
@@ -46,8 +45,6 @@ export default function ConsolePage() {
   const [feedbackSessionId, setFeedbackSessionId] = useState<string | null>(
     null,
   );
-  const [messageInput, setMessageInput] = useState('');
-  const [assistantStream, setAssistantStream] = useState('');
   const [lastActionMessage, setLastActionMessage] = useState('');
 
   const [scenarioSearch, setScenarioSearch] = useState('');
@@ -83,7 +80,6 @@ export default function ConsolePage() {
   const logoutMutation = useLogoutMutation(setAccessToken);
   const startSessionMutation = useStartSessionMutation(accessToken);
   const endSessionMutation = useEndSessionMutation(accessToken);
-  const sendMessageMutation = useSendMessageStreamMutation(accessToken);
 
   const scenarioOptions = scenariosQuery.data?.scenarios || [];
   const historyItems = historyQuery.data?.sessions || [];
@@ -134,7 +130,6 @@ export default function ConsolePage() {
   const sessionError =
     startSessionMutation.error ||
     endSessionMutation.error ||
-    sendMessageMutation.error ||
     detailQuery.error;
 
   const completedSessions = useMemo(
@@ -196,7 +191,6 @@ export default function ConsolePage() {
     }
 
     setLastActionMessage('');
-    setAssistantStream('');
 
     try {
       const result = await startSessionMutation.mutateAsync({
@@ -229,30 +223,6 @@ export default function ConsolePage() {
       setFeedbackSessionId(result.session.id);
       setActiveView('feedback');
       setLastActionMessage('Session ended. Feedback generation started.');
-    } catch {
-      // handled by mutation state
-    }
-  };
-
-  const handleSendMessage = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!activeSessionId || !messageInput.trim()) {
-      setLastActionMessage('Start a session and type a message first.');
-      return;
-    }
-
-    setAssistantStream('');
-
-    try {
-      await sendMessageMutation.mutateAsync({
-        sessionId: activeSessionId,
-        content: messageInput.trim(),
-        onToken: (token) => {
-          setAssistantStream((prev) => prev + token);
-        },
-      });
-      setMessageInput('');
     } catch {
       // handled by mutation state
     }
@@ -303,20 +273,18 @@ export default function ConsolePage() {
     <ConversationView
       activeSessionId={activeSessionId}
       messages={messages}
-      assistantStream={assistantStream}
-      messageInput={messageInput}
-      isSending={sendMessageMutation.isPending}
       voiceSupported={voiceSession.isSupported}
       voiceConnectionState={voiceSession.connectionState}
       voiceStatus={voiceSession.status}
       isRecording={voiceSession.isRecording}
       isPlayingAudio={voiceSession.isPlayingAudio}
+      isAudioPaused={voiceSession.isAudioPaused}
+      voiceTranscript={voiceSession.lastTranscript}
       voiceAssistantText={voiceSession.lastAssistantText}
       voiceErrorMessage={voiceSession.lastError || undefined}
       aiCharacterName={selectedScenario?.characterProfile.name}
       onToggleRecording={voiceSession.toggleRecording}
-      onMessageInputChange={setMessageInput}
-      onSendMessage={handleSendMessage}
+      onToggleAudioPlayback={voiceSession.toggleAudioPlayback}
     />
   );
 

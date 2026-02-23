@@ -13,6 +13,12 @@ export const env = {
   SERVER_URL: process.env.SERVER_URL || "http://localhost:5000",
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:3000",
   DATABASE_URL: required("DATABASE_URL"),
+  DB_POOL_MAX: parseInt(process.env.DB_POOL_MAX || "20", 10),
+  DB_IDLE_TIMEOUT_MS: parseInt(process.env.DB_IDLE_TIMEOUT_MS || "30000", 10),
+  DB_CONNECTION_TIMEOUT_MS: parseInt(
+    process.env.DB_CONNECTION_TIMEOUT_MS || "15000",
+    10
+  ),
   REDIS_URL: required("REDIS_URL"),
   SUPABASE_URL: required("SUPABASE_URL"),
   SUPABASE_ANON_KEY: required("SUPABASE_ANON_KEY"),

@@ -35,12 +35,14 @@ type UseVoiceSessionResult = {
   status: VoiceStatus;
   isRecording: boolean;
   isPlayingAudio: boolean;
+  isAudioPaused: boolean;
   lastTranscript: string;
   lastAssistantText: string;
   lastError: string | null;
   startRecording: () => Promise<void>;
   stopRecording: () => void;
   toggleRecording: () => Promise<void>;
+  toggleAudioPlayback: () => void;
 };
 
 const VOICE_CHUNK_MS = 250;
@@ -73,6 +75,7 @@ export const useVoiceSession = ({
   const audioElRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
   const isPlayingRef = useRef(false);
+  const manualAudioPauseRef = useRef(false);
   const callbacksRef = useRef({
     onTranscript,
     onAssistantText,
@@ -85,6 +88,7 @@ export const useVoiceSession = ({
   const [status, setStatus] = useState<VoiceStatus>('idle');
   const [isRecording, setIsRecording] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [isAudioPaused, setIsAudioPaused] = useState(false);
   const [lastTranscript, setLastTranscript] = useState('');
   const [lastAssistantText, setLastAssistantText] = useState('');
   const [lastError, setLastError] = useState<string | null>(null);
@@ -121,12 +125,14 @@ export const useVoiceSession = ({
     }
 
     isPlayingRef.current = false;
+    manualAudioPauseRef.current = false;
     setIsPlayingAudio(false);
+    setIsAudioPaused(false);
     audioQueueRef.current = [];
   }, []);
 
   const playNextAudio = useCallback(() => {
-    if (isPlayingRef.current) return;
+    if (isPlayingRef.current || manualAudioPauseRef.current) return;
 
     const nextChunk = audioQueueRef.current.shift();
     if (!nextChunk) {
@@ -140,6 +146,7 @@ export const useVoiceSession = ({
     audioElRef.current = audio;
     isPlayingRef.current = true;
     setIsPlayingAudio(true);
+    setIsAudioPaused(false);
 
     const finalize = () => {
       if (audioUrlRef.current) {
@@ -165,6 +172,37 @@ export const useVoiceSession = ({
       finalize();
     });
   }, []);
+
+  const pauseAudioPlayback = useCallback(() => {
+    manualAudioPauseRef.current = true;
+    const audio = audioElRef.current;
+    if (audio && !audio.paused) {
+      audio.pause();
+    }
+    setIsAudioPaused(true);
+    setIsPlayingAudio(false);
+  }, []);
+
+  const resumeAudioPlayback = useCallback(() => {
+    manualAudioPauseRef.current = false;
+    const audio = audioElRef.current;
+
+    if (audio && audio.paused) {
+      void audio.play().then(() => {
+        setIsAudioPaused(false);
+        setIsPlayingAudio(true);
+      }).catch((error: unknown) => {
+        const message =
+          error instanceof Error ? error.message : 'Could not resume audio playback.';
+        setLastError(message);
+        callbacksRef.current.onError?.(message);
+      });
+      return;
+    }
+
+    setIsAudioPaused(false);
+    playNextAudio();
+  }, [playNextAudio]);
 
   const stopActiveMediaRecorder = useCallback((sendAudioEnd: boolean) => {
     shouldSendAudioEndRef.current = sendAudioEnd;
@@ -203,6 +241,7 @@ export const useVoiceSession = ({
     wsRef.current = ws;
     setConnectionState('connecting');
     setLastError(null);
+    setIsAudioPaused(false);
 
     ws.onopen = () => {
       setConnectionState('connected');
@@ -411,17 +450,33 @@ export const useVoiceSession = ({
     await startRecording();
   }, [isRecording, startRecording, stopRecording]);
 
+  const toggleAudioPlayback = useCallback(() => {
+    if (isAudioPaused) {
+      resumeAudioPlayback();
+      return;
+    }
+
+    if (isPlayingRef.current || audioElRef.current) {
+      pauseAudioPlayback();
+      return;
+    }
+
+    resumeAudioPlayback();
+  }, [isAudioPaused, pauseAudioPlayback, resumeAudioPlayback]);
+
   return {
     isSupported,
     connectionState,
     status,
     isRecording,
     isPlayingAudio,
+    isAudioPaused,
     lastTranscript,
     lastAssistantText,
     lastError,
     startRecording,
     stopRecording,
     toggleRecording,
+    toggleAudioPlayback,
   };
 };
