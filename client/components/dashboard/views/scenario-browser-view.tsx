@@ -213,7 +213,8 @@ export function ScenarioBrowserView({
   onUpdateScenario,
   onDeleteScenario,
 }: ScenarioBrowserViewProps) {
-  const [formState, setFormState] = useState<ScenarioFormState>(defaultFormState);
+  const [formState, setFormState] =
+    useState<ScenarioFormState>(defaultFormState);
   const [editingScenarioId, setEditingScenarioId] = useState<string | null>(
     null,
   );
@@ -221,7 +222,8 @@ export function ScenarioBrowserView({
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
   const selectedScenario = useMemo(
-    () => scenarios.find((scenario) => scenario.id === selectedScenarioId) || null,
+    () =>
+      scenarios.find((scenario) => scenario.id === selectedScenarioId) || null,
     [scenarios, selectedScenarioId],
   );
 
@@ -254,7 +256,8 @@ export function ScenarioBrowserView({
     const characterName = normalizeText(formState.characterName);
     const characterRole = normalizeText(formState.characterRole);
 
-    if (!title || title.length < 3) return 'Scenario title must be at least 3 characters.';
+    if (!title || title.length < 3)
+      return 'Scenario title must be at least 3 characters.';
     if (!description || description.length < 10)
       return 'Situation details must be at least 10 characters.';
     if (!characterName) return 'Character name is required.';
@@ -284,7 +287,9 @@ export function ScenarioBrowserView({
         setFormState(defaultFormState);
       }
     } catch {
-      setFormError('Could not save scenario. Check the error banner and retry.');
+      setFormError(
+        'Could not save scenario. Check the error banner and retry.',
+      );
     }
   };
 
@@ -308,7 +313,9 @@ export function ScenarioBrowserView({
       }
       setFormSuccess('Custom scenario deleted.');
     } catch {
-      setFormError('Could not delete this scenario. It may already be used in session history.');
+      setFormError(
+        'Could not delete this scenario. It may already be used in session history.',
+      );
     }
   };
 
@@ -459,7 +466,7 @@ export function ScenarioBrowserView({
           </div>
         </section>
 
-        <section className='rounded-xl border border-white/12 bg-[#131313]/85 p-3 sm:p-4'>
+        <section className='rounded-xl h-120 overflow-y-auto border border-white/12 bg-[#131313]/85 p-3 sm:p-4'>
           <div className='mb-3 flex items-center justify-between gap-2'>
             <p className='inline-flex items-center gap-2 text-sm font-semibold text-white'>
               <FiPlus size={14} />
@@ -491,7 +498,10 @@ export function ScenarioBrowserView({
               <input
                 value={formState.title}
                 onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, title: event.target.value }))
+                  setFormState((prev) => ({
+                    ...prev,
+                    title: event.target.value,
+                  }))
                 }
                 maxLength={255}
                 placeholder='Ask for salary review'
@@ -580,10 +590,15 @@ export function ScenarioBrowserView({
           </div>
 
           <div className='mt-3 rounded-lg border border-white/10 bg-white/4 p-3 text-xs text-white/70'>
-            <p className='font-semibold text-white/85'>Auto-generated preview</p>
-            <p className='mt-1'>Mood: {autoPayloadPreview.characterProfile.emotionalState}</p>
+            <p className='font-semibold text-white/85'>
+              Auto-generated preview
+            </p>
             <p className='mt-1'>
-              Personality: {autoPayloadPreview.characterProfile.personality.join(', ')}
+              Mood: {autoPayloadPreview.characterProfile.emotionalState}
+            </p>
+            <p className='mt-1'>
+              Personality:{' '}
+              {autoPayloadPreview.characterProfile.personality.join(', ')}
             </p>
             <p className='mt-1'>
               Goals: {autoPayloadPreview.characterProfile.goals[0]}
@@ -616,12 +631,16 @@ export function ScenarioBrowserView({
             ) : null}
           </div>
 
-          {formError ? <p className='mt-2 text-sm text-rose-300'>{formError}</p> : null}
+          {formError ? (
+            <p className='mt-2 text-sm text-rose-300'>{formError}</p>
+          ) : null}
           {errorMessage ? (
             <p className='mt-2 text-sm text-rose-300'>{errorMessage}</p>
           ) : null}
           {createScenarioErrorMessage ? (
-            <p className='mt-2 text-sm text-rose-300'>{createScenarioErrorMessage}</p>
+            <p className='mt-2 text-sm text-rose-300'>
+              {createScenarioErrorMessage}
+            </p>
           ) : null}
         </section>
       </div>
