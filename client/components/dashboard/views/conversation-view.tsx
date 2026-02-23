@@ -183,7 +183,7 @@ export function ConversationView({
           <div className='flex flex-col items-center justify-center'>
             <StageWave />
 
-            {aiSpeakingText ? (
+            {/* {aiSpeakingText ? (
               <div className='mt-4 w-full max-w-105'>
                 <p className='mb-1 text-[10px] uppercase tracking-[0.13em] text-white/35'>
                   {aiCharacterName}
@@ -204,7 +204,7 @@ export function ConversationView({
                   </AnimatePresence>
                 </div>
               </div>
-            ) : null}
+            ) : null} */}
           </div>
 
           <div className='mt-5 flex flex-wrap items-center gap-2'>
