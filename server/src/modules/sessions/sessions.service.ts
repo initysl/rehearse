@@ -250,6 +250,27 @@ export const clearSessionHistory = async (
   return Number(result.rows[0]?.deleted_count || "0");
 };
 
+export const deleteSessionById = async (
+  userId: string,
+  sessionId: string
+): Promise<"deleted" | "not_found" | "active"> => {
+  const deleted = await db.query<{ id: string }>(
+    `DELETE FROM public.sessions
+     WHERE id = $1
+       AND user_id = $2
+       AND status <> 'active'
+     RETURNING id`,
+    [sessionId, userId]
+  );
+
+  if (deleted.rows[0]) return "deleted";
+
+  const existing = await getSessionRowById(userId, sessionId);
+  if (!existing) return "not_found";
+  if (existing.status === "active") return "active";
+  return "not_found";
+};
+
 export const endSessionById = async (
   userId: string,
   sessionId: string,

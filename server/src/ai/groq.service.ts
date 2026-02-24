@@ -1,6 +1,11 @@
 import { Response } from "express";
 import { groq } from "../config/groq";
 import { env } from "../config/env";
+import {
+  consumeGroqQuota,
+  estimateMessagesTokens,
+  GroqQuotaExceededError,
+} from "./groq-quota.service";
 import { logWarn } from "../utils/logger";
 
 type GroqMessage = { role: "system" | "user" | "assistant"; content: string };
@@ -8,6 +13,8 @@ type GroqMessage = { role: "system" | "user" | "assistant"; content: string };
 const DEFAULT_COMPLETION_TIMEOUT_MS = 15000;
 const DEFAULT_STREAM_TIMEOUT_MS = 30000;
 const DEFAULT_RETRIES = 2;
+const STREAM_MAX_TOKENS = 500;
+const COMPLETION_MAX_TOKENS = 1500;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -28,6 +35,14 @@ const withRetry = async <T>(
       attempt += 1;
       return await operation();
     } catch (error) {
+      const status = Number(
+        (error as { status?: number; statusCode?: number }).status ||
+          (error as { status?: number; statusCode?: number }).statusCode ||
+          0
+      );
+      if (error instanceof GroqQuotaExceededError || status === 429) {
+        throw error;
+      }
       if (attempt > retries) throw error;
       logWarn(options.event, {
         attempt,
@@ -48,6 +63,23 @@ export const streamGroqResponse = async (
   res.setHeader("Connection", "keep-alive");
 
   let fullContent = "";
+  const promptTokens = estimateMessagesTokens(messages);
+  const reservedTokens = promptTokens + STREAM_MAX_TOKENS;
+
+  await consumeGroqQuota({
+    model: env.GROQ_MODEL,
+    increments: {
+      rpm: 1,
+      rpd: 1,
+      tpm: reservedTokens,
+      tpd: reservedTokens,
+    },
+    context: {
+      route: "chat.stream",
+      promptTokens,
+      reservedCompletionTokens: STREAM_MAX_TOKENS,
+    },
+  });
 
   const timeoutMs = env.GROQ_STREAM_TIMEOUT_MS || DEFAULT_STREAM_TIMEOUT_MS;
   await withRetry(
@@ -57,7 +89,7 @@ export const streamGroqResponse = async (
           model: env.GROQ_MODEL,
           messages,
           stream: true,
-          max_tokens: 500,
+          max_tokens: STREAM_MAX_TOKENS,
         }),
         new Promise<never>((_resolve, reject) =>
           setTimeout(
@@ -88,6 +120,23 @@ export const getGroqChatCompletion = async (
   messages: GroqMessage[]
 ): Promise<string> => {
   const timeoutMs = env.GROQ_COMPLETION_TIMEOUT_MS || DEFAULT_COMPLETION_TIMEOUT_MS;
+  const promptTokens = estimateMessagesTokens(messages);
+  const reservedTokens = promptTokens + COMPLETION_MAX_TOKENS;
+
+  await consumeGroqQuota({
+    model: env.GROQ_MODEL,
+    increments: {
+      rpm: 1,
+      rpd: 1,
+      tpm: reservedTokens,
+      tpd: reservedTokens,
+    },
+    context: {
+      route: "chat.completion",
+      promptTokens,
+      reservedCompletionTokens: COMPLETION_MAX_TOKENS,
+    },
+  });
 
   return withRetry(
     async () => {
@@ -95,7 +144,7 @@ export const getGroqChatCompletion = async (
         groq.chat.completions.create({
           model: env.GROQ_MODEL,
           messages,
-          max_tokens: 1500,
+          max_tokens: COMPLETION_MAX_TOKENS,
         }),
         new Promise<never>((_resolve, reject) =>
           setTimeout(

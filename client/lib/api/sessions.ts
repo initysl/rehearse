@@ -2,6 +2,7 @@ import { getStoredAccessToken } from "../auth-token";
 import { apiRequest, getApiBaseUrl, ApiError } from "./client";
 import {
   ClearSessionHistoryResponse,
+  DeleteSessionResponse,
   EndSessionInput,
   EndSessionResponse,
   SessionDetailResponse,
@@ -63,6 +64,16 @@ export const clearSessionHistory = (
 
 export const getSessionDetail = (sessionId: string, accessToken?: string | null) => {
   return apiRequest<SessionDetailResponse>(`/sessions/${sessionId}`, {
+    accessToken,
+  });
+};
+
+export const deleteSession = (
+  sessionId: string,
+  accessToken?: string | null
+) => {
+  return apiRequest<DeleteSessionResponse>(`/sessions/${sessionId}`, {
+    method: "DELETE",
     accessToken,
   });
 };

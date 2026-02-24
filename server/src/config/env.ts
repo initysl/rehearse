@@ -1,6 +1,11 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (value === undefined) return fallback;
+  return value.toLowerCase() !== "false";
+};
+
 const required = (key: string): string => {
   const value = process.env[key];
   if (!value) throw new Error(`Missing required environment variable: ${key}`);
@@ -45,4 +50,14 @@ export const env = {
     process.env.GROQ_COMPLETION_TIMEOUT_MS || "15000",
     10
   ),
+  GROQ_QUOTA_ENABLED: parseBoolean(process.env.GROQ_QUOTA_ENABLED, true),
+  GROQ_QUOTA_FAIL_OPEN: parseBoolean(process.env.GROQ_QUOTA_FAIL_OPEN, true),
+  GROQ_QUOTA_HEADROOM_PERCENT: Math.min(
+    100,
+    Math.max(1, parseInt(process.env.GROQ_QUOTA_HEADROOM_PERCENT || "100", 10))
+  ),
+  GROQ_AUDIO_BYTES_PER_SECOND_ESTIMATE: parseInt(
+    process.env.GROQ_AUDIO_BYTES_PER_SECOND_ESTIMATE || "6000",
+    10
+  ) || 6000,
 };

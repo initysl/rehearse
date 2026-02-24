@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   clearSessionHistory,
+  deleteSession,
   endSession,
   getSessionDetail,
   getSessionHistory,
@@ -73,6 +74,23 @@ export const useClearSessionHistoryMutation = (accessToken: string | null) => {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["sessions"] });
       void queryClient.invalidateQueries({ queryKey: ["feedback"] });
+    },
+  });
+};
+
+export const useDeleteSessionMutation = (accessToken: string | null) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (sessionId: string) => deleteSession(sessionId, accessToken),
+    onSuccess: (_result, sessionId) => {
+      void queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.sessions.detail(sessionId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.feedback.bySession(sessionId),
+      });
     },
   });
 };

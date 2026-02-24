@@ -2,6 +2,7 @@ import { Readable } from "stream";
 import { toFile } from "groq-sdk";
 import { env } from "../config/env";
 import { groq } from "../config/groq";
+import { consumeGroqQuota, estimateAudioSeconds } from "../ai/groq-quota.service";
 
 const resolveAudioFileMeta = (
   mimeType: string | undefined
@@ -31,6 +32,22 @@ export const transcribeAudio = async (
   audioBuffer: Buffer,
   mimeType?: string
 ): Promise<string> => {
+  const estimatedAudioSeconds = estimateAudioSeconds(audioBuffer.length, mimeType);
+  await consumeGroqQuota({
+    model: env.GROQ_STT_MODEL,
+    increments: {
+      rpm: 1,
+      rpd: 1,
+      ash: estimatedAudioSeconds,
+      asd: estimatedAudioSeconds,
+    },
+    context: {
+      route: "voice.stt",
+      mimeType: mimeType || "audio/webm",
+      estimatedAudioSeconds,
+    },
+  });
+
   const fileMeta = resolveAudioFileMeta(mimeType);
   const file = await toFile(Readable.from(audioBuffer), fileMeta.filename, {
     type: fileMeta.mimeType,

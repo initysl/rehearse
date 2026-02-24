@@ -1,5 +1,12 @@
 import type { SessionHistoryItem } from '@/lib/api/types';
-import { FiArrowRight, FiBarChart2, FiClock, FiTrendingUp, FiUser } from 'react-icons/fi';
+import {
+  FiArrowRight,
+  FiBarChart2,
+  FiClock,
+  FiTrendingUp,
+  FiUser,
+  FiX,
+} from 'react-icons/fi';
 import { Panel } from '../panel';
 
 type ProfileHistoryViewProps = {
@@ -8,8 +15,8 @@ type ProfileHistoryViewProps = {
   totalScenarios: number;
   historyItems: SessionHistoryItem[];
   onSelectSession: (sessionId: string) => void;
-  onClearRecent: () => Promise<void>;
-  isClearingRecent: boolean;
+  onDeleteSession: (sessionId: string) => Promise<void>;
+  deletingSessionId: string | null;
 };
 
 export function ProfileHistoryView({
@@ -18,8 +25,8 @@ export function ProfileHistoryView({
   totalScenarios,
   historyItems,
   onSelectSession,
-  onClearRecent,
-  isClearingRecent,
+  onDeleteSession,
+  deletingSessionId,
 }: ProfileHistoryViewProps) {
   return (
     <Panel
@@ -58,35 +65,48 @@ export function ProfileHistoryView({
             <FiClock size={12} />
             Recent Sessions
           </p>
-          <button
-            type='button'
-            onClick={() => {
-              void onClearRecent();
-            }}
-            disabled={isClearingRecent || historyItems.length === 0}
-            className='rounded-lg border border-white/20 bg-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50'
-          >
-            {isClearingRecent ? 'Clearing...' : 'Clear recent'}
-          </button>
+          <p className='text-[10px] uppercase tracking-[0.1em] text-white/35'>
+            Tap <FiX className='mx-1 inline-block' size={10} /> to remove one
+          </p>
         </div>
 
         <div className='space-y-2'>
           {historyItems.length ? (
             historyItems.map((session) => (
-              <button
+              <div
                 key={session.id}
-                type='button'
-                onClick={() => onSelectSession(session.id)}
-                className='flex w-full items-center justify-between rounded-xl border border-white/15 bg-[#141414] px-3 py-2 text-left transition hover:border-amber-400/35'
+                className='flex items-center gap-2 rounded-xl border border-white/15 bg-[#141414] px-3 py-2 transition hover:border-amber-400/35'
               >
-                <div>
-                  <p className='text-sm text-white'>{session.scenarioTitle}</p>
-                  <p className='text-xs uppercase tracking-[0.08em] text-white/45'>
-                    {session.scenarioCategory} · {session.status}
-                  </p>
-                </div>
-                <FiArrowRight className='text-white/35' />
-              </button>
+                <button
+                  type='button'
+                  onClick={() => onSelectSession(session.id)}
+                  className='flex min-w-0 flex-1 items-center justify-between text-left'
+                >
+                  <div className='min-w-0'>
+                    <p className='truncate text-sm text-white'>
+                      {session.scenarioTitle}
+                    </p>
+                    <p className='text-xs uppercase tracking-[0.08em] text-white/45'>
+                      {session.scenarioCategory} · {session.status}
+                    </p>
+                  </div>
+                  <FiArrowRight className='ml-2 shrink-0 text-white/35' />
+                </button>
+
+                <button
+                  type='button'
+                  onClick={() => {
+                    void onDeleteSession(session.id);
+                  }}
+                  disabled={
+                    deletingSessionId === session.id || session.status === 'active'
+                  }
+                  aria-label={`Delete ${session.scenarioTitle}`}
+                  className='inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/20 bg-white/5 text-white/60 transition hover:border-rose-300/50 hover:bg-rose-400/10 hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-50'
+                >
+                  <FiX size={13} />
+                </button>
+              </div>
             ))
           ) : (
             <p className='rounded-xl border border-white/15 bg-[#141414] px-3 py-2 text-sm text-white/45'>

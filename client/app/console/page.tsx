@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   FiAlertCircle,
@@ -34,7 +34,7 @@ import {
   useUpdateScenarioMutation,
 } from '@/lib/hooks/use-scenarios';
 import {
-  useClearSessionHistoryMutation,
+  useDeleteSessionMutation,
   useEndSessionMutation,
   useSessionDetailQuery,
   useSessionHistoryQuery,
@@ -69,13 +69,7 @@ export default function ConsolePage() {
   const [scenarioCategory, setScenarioCategory] =
     useState<ScenarioCategoryFilter>('all');
   const [scenarioCustomOnly, setScenarioCustomOnly] = useState(false);
-  const [pendingClearRecent, setPendingClearRecent] = useState<{
-    secondsLeft: number;
-  } | null>(null);
-  const clearRecentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-  const clearRecentIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(
     null,
   );
 
@@ -110,8 +104,7 @@ export default function ConsolePage() {
   const createScenarioMutation = useCreateScenarioMutation(accessToken);
   const updateScenarioMutation = useUpdateScenarioMutation(accessToken);
   const deleteScenarioMutation = useDeleteScenarioMutation(accessToken);
-  const clearSessionHistoryMutation =
-    useClearSessionHistoryMutation(accessToken);
+  const deleteSessionMutation = useDeleteSessionMutation(accessToken);
 
   const scenarioOptions = scenariosQuery.data?.scenarios || [];
   const historyItems = historyQuery.data?.sessions || [];
@@ -216,29 +209,6 @@ export default function ConsolePage() {
     }
   }, [activeSessionId, voiceSession.isRecording, voiceSession.stopRecording]);
 
-  const clearPendingClearRecentTimers = () => {
-    if (clearRecentTimeoutRef.current) {
-      clearTimeout(clearRecentTimeoutRef.current);
-      clearRecentTimeoutRef.current = null;
-    }
-    if (clearRecentIntervalRef.current) {
-      clearInterval(clearRecentIntervalRef.current);
-      clearRecentIntervalRef.current = null;
-    }
-  };
-
-  useEffect(
-    () => () => {
-      if (clearRecentTimeoutRef.current) {
-        clearTimeout(clearRecentTimeoutRef.current);
-      }
-      if (clearRecentIntervalRef.current) {
-        clearInterval(clearRecentIntervalRef.current);
-      }
-    },
-    [],
-  );
-
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync();
@@ -326,48 +296,27 @@ export default function ConsolePage() {
     void scenariosQuery.refetch();
   };
 
-  const handleClearRecent = async (): Promise<void> => {
-    if (clearSessionHistoryMutation.isPending) return;
-    clearPendingClearRecentTimers();
+  const handleDeleteHistorySession = async (sessionId: string): Promise<void> => {
+    if (deleteSessionMutation.isPending) return;
+    setDeletingSessionId(sessionId);
     setLastActionMessage('');
-    setPendingClearRecent({ secondsLeft: 5 });
-
-    clearRecentIntervalRef.current = setInterval(() => {
-      setPendingClearRecent((previous) => {
-        if (!previous) return null;
-        return {
-          secondsLeft: previous.secondsLeft > 1 ? previous.secondsLeft - 1 : 1,
-        };
-      });
-    }, 1000);
-
-    clearRecentTimeoutRef.current = setTimeout(() => {
-      clearPendingClearRecentTimers();
-      setPendingClearRecent(null);
-
-      void (async () => {
-        try {
-          const result = await clearSessionHistoryMutation.mutateAsync({
-            scope: 'non_active',
-            limit: 200,
-          });
-          if (result.deletedCount > 0) {
-            setFeedbackSessionId(null);
-          }
-          setLastActionMessage(
-            `Cleared ${result.deletedCount} recent sessions.`,
-          );
-        } catch {
-          setLastActionMessage('Could not clear recent sessions right now.');
-        }
-      })();
-    }, 5000);
-  };
-
-  const handleUndoClearRecent = () => {
-    clearPendingClearRecentTimers();
-    setPendingClearRecent(null);
-    setLastActionMessage('Clear recent canceled.');
+    try {
+      await deleteSessionMutation.mutateAsync(sessionId);
+      if (activeSessionId === sessionId) {
+        setActiveSessionId(null);
+      }
+      if (feedbackSessionId === sessionId) {
+        setFeedbackSessionId(null);
+      }
+      setLastActionMessage('Session removed from history.');
+      void historyQuery.refetch();
+    } catch (error) {
+      setLastActionMessage(
+        `Could not remove this session: ${formatError(error)}`,
+      );
+    } finally {
+      setDeletingSessionId(null);
+    }
   };
 
   const scenarioErrorMessage = scenariosQuery.error
@@ -459,10 +408,8 @@ export default function ConsolePage() {
       completedSessions={completedSessions}
       totalScenarios={scenarioOptions.length}
       historyItems={historyItems}
-      onClearRecent={handleClearRecent}
-      isClearingRecent={
-        clearSessionHistoryMutation.isPending || Boolean(pendingClearRecent)
-      }
+      onDeleteSession={handleDeleteHistorySession}
+      deletingSessionId={deletingSessionId}
       onSelectSession={(sessionId) => {
         setActiveSessionId(sessionId);
         setFeedbackSessionId(sessionId);
@@ -522,20 +469,6 @@ export default function ConsolePage() {
       <div className='grid gap-4 xl:grid-cols-[1.25fr_0.75fr]'>
         <div className='space-y-4'>
           {primaryOutlet}
-
-          {pendingClearRecent ? (
-            <section className='inline-flex w-fit items-center gap-2 rounded-xl border border-sky-300/25 bg-sky-300/10 px-3 py-2 text-sm text-sky-100'>
-              <FiClock className='text-sky-200' />
-              Clearing recent in {pendingClearRecent.secondsLeft}s.
-              <button
-                type='button'
-                onClick={handleUndoClearRecent}
-                className='rounded-md border border-sky-200/30 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:bg-sky-300/15'
-              >
-                Undo
-              </button>
-            </section>
-          ) : null}
 
           {lastActionMessage ? (
             <section className='inline-flex w-fit items-center gap-2 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200'>

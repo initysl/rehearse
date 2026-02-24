@@ -4,6 +4,7 @@ import { enqueueFeedbackGeneration } from "../../jobs/feedback.queue";
 import { logError, logInfo } from "../../utils/logger";
 import {
   clearSessionHistory,
+  deleteSessionById,
   endSessionById,
   getSessionDetailById,
   getSessionHistory,
@@ -154,6 +155,34 @@ export const clearHistory = async (
     const deletedCount = await clearSessionHistory(req.user.userId, query);
 
     return res.status(200).json({ deletedCount });
+  } catch (error) {
+    if (error instanceof ZodError) return handleZodError(error, next);
+    return next(error as Error);
+  }
+};
+
+export const deleteSession = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user?.userId) return res.status(401).json({ error: "Unauthorized" });
+
+    const { id } = sessionIdParamSchema.parse(req.params);
+    const result = await deleteSessionById(req.user.userId, id);
+
+    if (result === "deleted") {
+      return res.status(200).json({ deleted: true });
+    }
+
+    if (result === "active") {
+      return res
+        .status(409)
+        .json({ error: "Cannot delete an active session. End it first." });
+    }
+
+    return res.status(404).json({ error: "Session not found" });
   } catch (error) {
     if (error instanceof ZodError) return handleZodError(error, next);
     return next(error as Error);

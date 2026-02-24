@@ -4,6 +4,7 @@ import { aiRateLimit } from "../../middleware/ratelimit.middleware";
 import { sendSessionMessage } from "../messages/messages.controller";
 import {
   clearHistory,
+  deleteSession,
   endSession,
   getHistory,
   getSession,
@@ -15,6 +16,7 @@ const router = Router();
 router.post("/start", authenticate, startPracticeSession);
 router.get("/history", authenticate, getHistory);
 router.delete("/history", authenticate, clearHistory);
+router.delete("/:id", authenticate, deleteSession);
 router.get("/:id", authenticate, getSession);
 router.post("/:id/message", authenticate, aiRateLimit, sendSessionMessage);
 router.post("/:id/end", authenticate, endSession);

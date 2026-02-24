@@ -160,6 +160,10 @@ export interface ClearSessionHistoryResponse {
   deletedCount: number;
 }
 
+export interface DeleteSessionResponse {
+  deleted: boolean;
+}
+
 export interface FeedbackResult {
   goalAchieved: boolean;
   goalAnalysis: string;

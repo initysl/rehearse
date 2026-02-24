@@ -3,6 +3,7 @@ import { logError } from '../utils/logger';
 
 export interface AppError extends Error {
   statusCode?: number;
+  retryAfterSeconds?: number;
 }
 
 export const errorHandler = (
@@ -22,6 +23,10 @@ export const errorHandler = (
     message,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
+
+  if (typeof err.retryAfterSeconds === 'number' && err.retryAfterSeconds > 0) {
+    res.setHeader('Retry-After', Math.ceil(err.retryAfterSeconds));
+  }
 
   res.status(statusCode).json({
     error: message,

@@ -478,7 +478,7 @@ export function ScenarioBrowserView({
               <button
                 type='button'
                 onClick={resetForm}
-                className='rounded-md border border-white/20 px-2 py-1 text-[11px] uppercase tracking-[0.1em] text-white/70 transition hover:text-white'
+                className='rounded-md border border-white/20 px-2 py-1 text-[11px] uppercase tracking-widest text-white/70 transition hover:text-white'
               >
                 Cancel edit
               </button>

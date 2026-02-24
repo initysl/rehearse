@@ -43,6 +43,9 @@ Base URL (local): `http://localhost:5000`
 - `DELETE /sessions/history`
   - Query: `scope?=non_active|completed|abandoned|all`, `limit?`
   - Response: `{ "deletedCount": number }`
+- `DELETE /sessions/:id`
+  - Deletes one non-active session from history.
+  - Returns `409` if the session is still active.
 - `GET /sessions/:id`
 - `POST /sessions/:id/message`
   - Body: `{ "content": string }`
