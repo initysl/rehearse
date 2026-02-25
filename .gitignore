@@ -36,3 +36,10 @@ Thumbs.db
 
 # Local setup scripts
 setup.sh
+
+# Local Python envs for local TTS services
+server/.venv-kokoro/
+.venv-kokoro/
+server/.venv-coqui/
+.venv-coqui/
+__pycache__/

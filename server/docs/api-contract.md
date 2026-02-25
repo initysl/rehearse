@@ -64,6 +64,7 @@ Base URL (local): `http://localhost:5000`
 - `GET /users/profile`
 - `PATCH /users/profile`
   - Body: `{ "fullName"?: string, "avatarUrl"?: string | null, "preferences"?: object }`
+  - Voice preference keys (optional): `preferences.ttsGender = "male" | "female"`, `preferences.ttsVoiceId = string`
 - `GET /users/progress`
 
 ## Response Notes
@@ -74,8 +75,10 @@ Base URL (local): `http://localhost:5000`
 ## Voice WebSocket
 
 - Endpoint: `ws://localhost:5000/ws/voice?sessionId=<uuid>&token=<accessToken>`
+- Backend TTS provider: Groq TTS (`GROQ_TTS_MODEL`)
 - Message flow:
   - Client sends JSON `{ "type": "audio_start", "mimeType": "audio/webm;codecs=opus" }`
   - Client streams binary `audio_chunk` frames
   - Client sends JSON `{ "type": "audio_end" }`
   - Server returns transcript + assistant text + streamed audio chunks
+  - If audio synthesis is unavailable, server emits status `{ "type": "status", "message": "audio_unavailable" }` and still completes text response.

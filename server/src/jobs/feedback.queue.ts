@@ -19,6 +19,7 @@ export interface FeedbackJobStatus {
 }
 
 const isTestEnv = process.env.NODE_ENV === "test";
+const useMemoryBackend = (): boolean => isTestEnv || !redis.isOpen;
 
 // In tests we keep the existing in-memory queue to avoid external Redis dependency.
 const memoryQueue: FeedbackJob[] = [];
@@ -393,7 +394,11 @@ const processNextRedisJob = async (blocking: boolean): Promise<boolean> => {
 const runRedisWorkerLoop = async (): Promise<void> => {
   while (redisWorkerRunning) {
     try {
-      await connectRedis();
+      const connected = await connectRedis();
+      if (!connected) {
+        await sleep(1000);
+        continue;
+      }
       await moveDueDelayedJobs();
       await reclaimStaleProcessingJobs();
       await processNextRedisJob(true);
@@ -415,47 +420,63 @@ export const startFeedbackQueueWorker = (): void => {
   void runRedisWorkerLoop();
 };
 
+const enqueueFeedbackGenerationInMemory = (input: {
+  sessionId: string;
+  userId: string;
+}): FeedbackJobStatus => {
+  const existing = memoryStatusMap.get(input.sessionId);
+
+  if (existing && (existing.state === "queued" || existing.state === "processing")) {
+    return existing;
+  }
+
+  if (existing?.state === "completed") {
+    return existing;
+  }
+
+  memoryQueue.push({
+    sessionId: input.sessionId,
+    userId: input.userId,
+    attempt: 1,
+    enqueuedAt: now(),
+  });
+
+  const queuedStatus = setMemoryStatus(input.sessionId, {
+    state: "queued",
+    attempts: 0,
+  });
+
+  logInfo("feedback.queue.enqueued", {
+    queueBackend: "memory",
+    sessionId: input.sessionId,
+    userId: input.userId,
+  });
+
+  if (AUTO_PROCESS_MEMORY) {
+    void drainMemoryQueue();
+  }
+
+  return queuedStatus;
+};
+
 export const enqueueFeedbackGeneration = async (input: {
   sessionId: string;
   userId: string;
 }): Promise<FeedbackJobStatus> => {
-  if (isTestEnv) {
-    const existing = memoryStatusMap.get(input.sessionId);
+  if (useMemoryBackend()) {
+    return enqueueFeedbackGenerationInMemory(input);
+  }
 
-    if (existing && (existing.state === "queued" || existing.state === "processing")) {
-      return existing;
-    }
-
-    if (existing?.state === "completed") {
-      return existing;
-    }
-
-    memoryQueue.push({
-      sessionId: input.sessionId,
-      userId: input.userId,
-      attempt: 1,
-      enqueuedAt: now(),
-    });
-
-    const queuedStatus = setMemoryStatus(input.sessionId, {
-      state: "queued",
-      attempts: 0,
-    });
-
-    logInfo("feedback.queue.enqueued", {
+  const connected = await connectRedis();
+  if (!connected) {
+    logWarn("feedback.queue.redis_unavailable", {
+      action: "enqueue",
       queueBackend: "memory",
       sessionId: input.sessionId,
       userId: input.userId,
     });
-
-    if (AUTO_PROCESS_MEMORY) {
-      void drainMemoryQueue();
-    }
-
-    return queuedStatus;
+    return enqueueFeedbackGenerationInMemory(input);
   }
-
-  await connectRedis();
 
   const existing = await getRedisStatus(input.sessionId);
   if (existing && (existing.state === "queued" || existing.state === "processing")) {
@@ -510,21 +531,37 @@ export const enqueueFeedbackGeneration = async (input: {
 export const getFeedbackJobStatus = async (
   sessionId: string
 ): Promise<FeedbackJobStatus | null> => {
-  if (isTestEnv) {
+  if (useMemoryBackend()) {
     return memoryStatusMap.get(sessionId) || null;
   }
 
-  await connectRedis();
+  const connected = await connectRedis();
+  if (!connected) {
+    logWarn("feedback.queue.redis_unavailable", {
+      action: "get_status",
+      queueBackend: "memory",
+      sessionId,
+    });
+    return memoryStatusMap.get(sessionId) || null;
+  }
   return getRedisStatus(sessionId);
 };
 
 export const processFeedbackQueueNow = async (): Promise<void> => {
-  if (isTestEnv) {
+  if (useMemoryBackend()) {
     await drainMemoryQueue();
     return;
   }
 
-  await connectRedis();
+  const connected = await connectRedis();
+  if (!connected) {
+    logWarn("feedback.queue.redis_unavailable", {
+      action: "process_now",
+      queueBackend: "memory",
+    });
+    await drainMemoryQueue();
+    return;
+  }
   await moveDueDelayedJobs();
   await reclaimStaleProcessingJobs();
 

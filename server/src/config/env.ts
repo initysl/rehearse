@@ -25,6 +25,10 @@ export const env = {
     10
   ),
   REDIS_URL: required("REDIS_URL"),
+  RATE_LIMIT_REDIS_ENABLED: parseBoolean(
+    process.env.RATE_LIMIT_REDIS_ENABLED,
+    (process.env.NODE_ENV || "development") === "production"
+  ),
   SUPABASE_URL: required("SUPABASE_URL"),
   SUPABASE_ANON_KEY: required("SUPABASE_ANON_KEY"),
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
@@ -44,7 +48,8 @@ export const env = {
   GROQ_MODEL: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
   GROQ_STT_MODEL: process.env.GROQ_STT_MODEL || "whisper-large-v3-turbo",
   GROQ_TTS_MODEL: process.env.GROQ_TTS_MODEL || "canopylabs/orpheus-v1-english",
-  GROQ_TTS_VOICE: process.env.GROQ_TTS_VOICE || "troy",
+  GROQ_TTS_VOICE_MALE: process.env.GROQ_TTS_VOICE_MALE || "troy",
+  GROQ_TTS_VOICE_FEMALE: process.env.GROQ_TTS_VOICE_FEMALE || "sara",
   GROQ_STREAM_TIMEOUT_MS: parseInt(process.env.GROQ_STREAM_TIMEOUT_MS || "30000", 10),
   GROQ_COMPLETION_TIMEOUT_MS: parseInt(
     process.env.GROQ_COMPLETION_TIMEOUT_MS || "15000",

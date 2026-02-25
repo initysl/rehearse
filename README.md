@@ -27,7 +27,7 @@ rehearse/
 Planned layered architecture:
 - Frontend: Next.js + TypeScript
 - Backend/API: Express + TypeScript
-- AI Engine: Groq (Llama 3.3 70B), Whisper STT, OpenAI TTS
+- AI Engine: Groq (Llama 3.3 70B), Whisper STT, Groq TTS
 - Data: PostgreSQL (persistent), Redis (cache/session/rate limit)
 - Realtime: SSE for streaming text, WebSocket for voice
 
@@ -45,7 +45,7 @@ What exists now in code:
 - Supabase-backed auth (`email/password` + Google OAuth via backend callback)
 - Protected profile routes with token validation middleware
 - AI prompt builders and Groq streaming helper
-- Voice pipeline components (WebSocket handler, Whisper STT, OpenAI TTS)
+- Voice pipeline components (WebSocket handler, Whisper STT, Groq TTS)
 - PostgreSQL SQL migration files for core tables
 - Redis and PostgreSQL configuration wiring
 - Migration runner script (`server/src/db/migrate.ts`)
@@ -59,7 +59,7 @@ What is still scaffold/TODO:
 - Frontend: Next.js, React, TypeScript, Tailwind CSS
 - Backend: Node.js, Express, TypeScript
 - Data: PostgreSQL, Redis
-- AI/Voice: Groq SDK, OpenAI (Whisper + TTS)
+- AI/Voice: Groq SDK (LLM + Whisper STT + TTS)
 - Security/Infra: Helmet, CORS, Supabase Auth, RLS, rate limiting
 
 ## Prerequisites
@@ -68,7 +68,7 @@ What is still scaffold/TODO:
 - npm
 - PostgreSQL 16+
 - Redis 7+
-- API keys for Groq and OpenAI
+- API key for Groq
 
 ## Environment Setup
 
@@ -86,7 +86,6 @@ cp server/.env.example server/.env
 - `DATABASE_URL`
 - `REDIS_URL`
 - `GROQ_API_KEY`
-- `OPENAI_API_KEY`
 - `CLIENT_URL` (default `http://localhost:3000`)
 
 ## Install Dependencies

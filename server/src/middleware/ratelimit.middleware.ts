@@ -1,7 +1,9 @@
 import { Request } from "express";
 import rateLimit from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
+import { env } from "../config/env";
 import { connectRedis, redis } from "../config/redis";
+import { logWarn } from "../utils/logger";
 
 const createRedisStore = (prefix: string) =>
   new RedisStore({
@@ -23,6 +25,13 @@ const userAwareKeyGenerator = (req: Request): string => {
 };
 
 const isTestEnv = process.env.NODE_ENV === "test";
+const shouldUseRedisStore = !isTestEnv && env.RATE_LIMIT_REDIS_ENABLED;
+
+if (!shouldUseRedisStore) {
+  logWarn("ratelimit.redis.disabled", {
+    reason: "RATE_LIMIT_REDIS_ENABLED is false or test environment",
+  });
+}
 
 export const aiRateLimit = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -31,7 +40,7 @@ export const aiRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: userAwareKeyGenerator,
-  store: isTestEnv ? undefined : createRedisStore("rl:ai:"),
+  store: shouldUseRedisStore ? createRedisStore("rl:ai:") : undefined,
   passOnStoreError: true,
 });
 
@@ -41,6 +50,6 @@ export const authRateLimit = rateLimit({
   message: { error: "Too many auth attempts — try again in 15 minutes" },
   standardHeaders: true,
   legacyHeaders: false,
-  store: isTestEnv ? undefined : createRedisStore("rl:auth:"),
+  store: shouldUseRedisStore ? createRedisStore("rl:auth:") : undefined,
   passOnStoreError: true,
 });

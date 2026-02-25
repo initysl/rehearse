@@ -87,13 +87,28 @@ wss.on("connection", async (ws, req) => {
 // ── Start Server ──────────────────────────────────────────────
 const start = async () => {
   try {
-    await connectRedis();
+    const redisReady = await connectRedis();
     await db.query("SELECT 1"); // Test DB connection
+
+    if (!redisReady) {
+      logWarn("server.start.redis_unavailable", {
+        message:
+          "Redis is not reachable at startup. Running with degraded mode for queue/rate-limit.",
+      });
+    }
+
     logInfo("server.start.dependencies_ready", {
-      redis: true,
+      redis: redisReady,
       postgres: true,
     });
-    startFeedbackQueueWorker();
+    if (redisReady) {
+      startFeedbackQueueWorker();
+    } else {
+      logWarn("feedback.queue.worker.skipped", {
+        queueBackend: "memory",
+        reason: "Redis unavailable at startup",
+      });
+    }
 
     server.listen(env.PORT, () => {
       logInfo("server.started", {

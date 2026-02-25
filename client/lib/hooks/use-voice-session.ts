@@ -10,6 +10,7 @@ type VoiceStatus =
   | 'transcribing'
   | 'generating_response'
   | 'synthesizing_audio'
+  | 'audio_unavailable'
   | 'processing'
   | 'error';
 
@@ -17,6 +18,7 @@ type VoiceServerMessage = {
   type: string;
   message?: string;
   text?: string;
+  reason?: string;
 };
 
 type UseVoiceSessionOptions = {
@@ -262,8 +264,28 @@ export const useVoiceSession = ({
         if (!parsed) return;
 
         if (parsed.type === 'status' && parsed.message) {
-          const message = parsed.message as VoiceStatus | 'empty_transcript';
-          setStatus(message === 'empty_transcript' ? 'idle' : message);
+          const message = parsed.message as
+            | VoiceStatus
+            | 'empty_transcript';
+          if (message === 'empty_transcript') {
+            setStatus('idle');
+            return;
+          }
+
+          if (message === 'audio_unavailable') {
+            setStatus('idle');
+            const reasonText = parsed.reason?.trim();
+            const fullError = reasonText
+              ? `Audio is unavailable right now: ${reasonText}`
+              : 'Audio is unavailable right now. Showing text only.';
+            setLastError(fullError);
+            callbacksRef.current.onError?.(
+              fullError,
+            );
+            return;
+          }
+
+          setStatus(message);
           return;
         }
 
