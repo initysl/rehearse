@@ -1,5 +1,13 @@
 export type DifficultyLevel = "cooperative" | "neutral" | "resistant" | "hostile";
 export type SessionStatus = "active" | "completed" | "abandoned";
+export type CharacterGender = "male" | "female";
+export type CharacterVoice =
+  | "autumn"
+  | "diana"
+  | "hannah"
+  | "austin"
+  | "daniel"
+  | "troy";
 
 export interface AuthUser {
   id: string;
@@ -43,6 +51,8 @@ export interface Scenario {
   characterProfile: {
     name: string;
     role: string;
+    gender: CharacterGender;
+    voiceId: CharacterVoice;
     personality: string[];
     goals: string[];
     emotionalState: string;
@@ -66,6 +76,8 @@ export interface CreateCustomScenarioInput {
   characterProfile: {
     name: string;
     role: string;
+    gender: CharacterGender;
+    voiceId: CharacterVoice;
     personality: string[];
     goals: string[];
     emotionalState: string;

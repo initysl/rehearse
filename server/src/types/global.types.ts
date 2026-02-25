@@ -27,6 +27,8 @@ export interface Scenario {
 export interface CharacterProfile {
   name: string;
   role: string;
+  gender?: "male" | "female";
+  voiceId?: "autumn" | "diana" | "hannah" | "austin" | "daniel" | "troy";
   personality: string[];
   goals: string[];
   emotionalState: string;

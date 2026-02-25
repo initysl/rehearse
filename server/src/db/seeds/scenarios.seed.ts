@@ -18,6 +18,8 @@ const scenarios: SeedScenario[] = [
     characterProfile: {
       name: "Jordan Lee",
       role: "Engineering Manager",
+      gender: "male",
+      voiceId: "daniel",
       personality: ["pragmatic", "budget-conscious", "respectful"],
       goals: [
         "Keep compensation within team budget",
@@ -52,6 +54,8 @@ const scenarios: SeedScenario[] = [
     characterProfile: {
       name: "Dr. Priya Raman",
       role: "Primary Care Physician",
+      gender: "female",
+      voiceId: "diana",
       personality: ["efficient", "professional", "direct"],
       goals: [
         "Explain results accurately",
@@ -86,6 +90,8 @@ const scenarios: SeedScenario[] = [
     characterProfile: {
       name: "Samira",
       role: "Parent",
+      gender: "female",
+      voiceId: "hannah",
       personality: ["protective", "opinionated", "emotionally expressive"],
       goals: [
         "Stay involved in your life decisions",
@@ -120,6 +126,8 @@ const scenarios: SeedScenario[] = [
     characterProfile: {
       name: "Alex",
       role: "Neighbor",
+      gender: "male",
+      voiceId: "austin",
       personality: ["defensive", "social", "independent"],
       goals: [
         "Avoid feeling controlled",
@@ -154,6 +162,8 @@ const scenarios: SeedScenario[] = [
     characterProfile: {
       name: "Taylor",
       role: "Friend and borrower",
+      gender: "female",
+      voiceId: "autumn",
       personality: ["avoidant", "friendly", "embarrassed"],
       goals: ["Maintain friendship", "Delay payment pressure"],
       emotionalState: "anxious and defensive",
@@ -182,6 +192,28 @@ const scenarios: SeedScenario[] = [
 const seed = async () => {
   console.log("Seeding default scenarios...");
   for (const scenario of scenarios) {
+    const updated = await db.query(
+      `UPDATE public.scenarios
+       SET
+         category = $2::varchar,
+         description = $3::text,
+         character_profile = $4::jsonb,
+         difficulty_variants = $5::jsonb
+       WHERE title = $1::varchar
+         AND is_custom = FALSE`,
+      [
+        scenario.title,
+        scenario.category,
+        scenario.description,
+        JSON.stringify(scenario.characterProfile),
+        JSON.stringify(scenario.difficultyVariants),
+      ]
+    );
+
+    if (updated.rowCount && updated.rowCount > 0) {
+      continue;
+    }
+
     await db.query(
       `INSERT INTO public.scenarios (
         title,
@@ -192,7 +224,7 @@ const seed = async () => {
         is_custom,
         created_by
       )
-      SELECT
+      VALUES (
         $1::varchar,
         $2::varchar,
         $3::text,
@@ -200,11 +232,6 @@ const seed = async () => {
         $5::jsonb,
         FALSE,
         NULL
-      WHERE NOT EXISTS (
-        SELECT 1
-        FROM public.scenarios
-        WHERE title = $6::varchar
-          AND is_custom = FALSE
       )`,
       [
         scenario.title,
@@ -212,7 +239,6 @@ const seed = async () => {
         scenario.description,
         JSON.stringify(scenario.characterProfile),
         JSON.stringify(scenario.difficultyVariants),
-        scenario.title,
       ]
     );
   }

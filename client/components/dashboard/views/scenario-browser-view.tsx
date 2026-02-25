@@ -13,6 +13,8 @@ import {
   FiZap,
 } from 'react-icons/fi';
 import type {
+  CharacterGender,
+  CharacterVoice,
   CreateCustomScenarioInput,
   DifficultyLevel,
   Scenario,
@@ -54,6 +56,8 @@ type ScenarioFormState = {
   description: string;
   characterName: string;
   characterRole: string;
+  characterGender: CharacterGender;
+  characterVoice: CharacterVoice;
 };
 
 const scenarioCategories: Array<{
@@ -74,6 +78,28 @@ const defaultFormState: ScenarioFormState = {
   description: '',
   characterName: '',
   characterRole: '',
+  characterGender: 'female',
+  characterVoice: 'autumn',
+};
+
+const voicesByGender: Record<CharacterGender, CharacterVoice[]> = {
+  female: ['autumn', 'diana', 'hannah'],
+  male: ['austin', 'daniel', 'troy'],
+};
+
+const toVoiceLabel = (voice: CharacterVoice): string => {
+  return voice.charAt(0).toUpperCase() + voice.slice(1);
+};
+
+const getDefaultVoiceForGender = (gender: CharacterGender): CharacterVoice => {
+  return voicesByGender[gender][0];
+};
+
+const isVoiceValidForGender = (
+  voice: CharacterVoice,
+  gender: CharacterGender,
+): boolean => {
+  return voicesByGender[gender].includes(voice);
 };
 
 const categoryPersonalityMap: Record<ScenarioCategory, string[]> = {
@@ -148,6 +174,13 @@ const buildAutoScenarioPayload = (
   const description = toSentenceCase(form.description);
   const characterName = toSentenceCase(form.characterName);
   const characterRole = toSentenceCase(form.characterRole);
+  const characterGender = form.characterGender;
+  const characterVoice = isVoiceValidForGender(
+    form.characterVoice,
+    characterGender,
+  )
+    ? form.characterVoice
+    : getDefaultVoiceForGender(characterGender);
 
   const personality = [
     ...categoryPersonalityMap[form.category],
@@ -172,6 +205,8 @@ const buildAutoScenarioPayload = (
     characterProfile: {
       name: characterName,
       role: characterRole,
+      gender: characterGender,
+      voiceId: characterVoice,
       personality,
       goals,
       emotionalState,
@@ -188,6 +223,13 @@ const mapScenarioToForm = (scenario: Scenario): ScenarioFormState => ({
   description: scenario.description,
   characterName: scenario.characterProfile.name,
   characterRole: scenario.characterProfile.role,
+  characterGender: scenario.characterProfile.gender || 'female',
+  characterVoice: isVoiceValidForGender(
+    scenario.characterProfile.voiceId || 'autumn',
+    scenario.characterProfile.gender || 'female',
+  )
+    ? scenario.characterProfile.voiceId || 'autumn'
+    : getDefaultVoiceForGender(scenario.characterProfile.gender || 'female'),
 });
 
 export function ScenarioBrowserView({
@@ -262,6 +304,9 @@ export function ScenarioBrowserView({
       return 'Situation details must be at least 10 characters.';
     if (!characterName) return 'Character name is required.';
     if (!characterRole) return 'Character role is required.';
+    if (!isVoiceValidForGender(formState.characterVoice, formState.characterGender)) {
+      return 'Selected voice must match selected gender.';
+    }
     return null;
   };
 
@@ -322,7 +367,7 @@ export function ScenarioBrowserView({
   return (
     <Panel
       title='Scenario Browser'
-      description='Pick a scenario or create your own. Advanced fields are generated automatically.'
+      description='Pick a scenario or create your own. You set name/role/gender/voice; advanced behavior is generated automatically.'
       rightSlot={
         <button
           type='button'
@@ -486,8 +531,8 @@ export function ScenarioBrowserView({
           </div>
 
           <p className='mb-3 text-xs text-white/55'>
-            You only fill in basics. Personality, goals, emotional state, and
-            all difficulty behavior are generated automatically.
+            You fill in core setup. Personality, goals, emotional state, and
+            difficulty behavior are generated automatically.
           </p>
 
           <div className='space-y-2.5'>
@@ -545,6 +590,49 @@ export function ScenarioBrowserView({
                   className='w-full rounded-lg border border-white/15 bg-[#151515] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-400/50'
                 />
               </label>
+
+              <label className='block'>
+                <span className='mb-1 inline-block text-xs text-white/60'>
+                  Character gender
+                </span>
+                <select
+                  value={formState.characterGender}
+                  onChange={(event) => {
+                    const nextGender = event.target.value as CharacterGender;
+                    setFormState((prev) => ({
+                      ...prev,
+                      characterGender: nextGender,
+                      characterVoice: getDefaultVoiceForGender(nextGender),
+                    }));
+                  }}
+                  className='w-full rounded-lg border border-white/15 bg-[#151515] px-3 py-2.5 text-sm text-white outline-none focus:border-amber-400/50'
+                >
+                  <option value='female'>Female</option>
+                  <option value='male'>Male</option>
+                </select>
+              </label>
+
+              <label className='block'>
+                <span className='mb-1 inline-block text-xs text-white/60'>
+                  Character voice
+                </span>
+                <select
+                  value={formState.characterVoice}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      characterVoice: event.target.value as CharacterVoice,
+                    }))
+                  }
+                  className='w-full rounded-lg border border-white/15 bg-[#151515] px-3 py-2.5 text-sm text-white outline-none focus:border-amber-400/50'
+                >
+                  {voicesByGender[formState.characterGender].map((voice) => (
+                    <option key={voice} value={voice}>
+                      {toVoiceLabel(voice)}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             <label className='block'>
@@ -599,6 +687,10 @@ export function ScenarioBrowserView({
             <p className='mt-1'>
               Personality:{' '}
               {autoPayloadPreview.characterProfile.personality.join(', ')}
+            </p>
+            <p className='mt-1'>
+              Voice: {autoPayloadPreview.characterProfile.gender} ·{' '}
+              {toVoiceLabel(autoPayloadPreview.characterProfile.voiceId)}
             </p>
             <p className='mt-1'>
               Goals: {autoPayloadPreview.characterProfile.goals[0]}

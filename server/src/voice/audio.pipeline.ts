@@ -1,5 +1,8 @@
 import { WebSocket } from "ws";
-import { convertToSpeech, resolveTtsVoiceSelection } from "./tts.service";
+import {
+  convertToSpeech,
+  resolveTtsVoiceSelectionForSession,
+} from "./tts.service";
 
 const MAX_TTS_CHARS_PER_CHUNK = 180;
 
@@ -71,7 +74,7 @@ const splitForTts = (text: string): string[] => {
 // Splits AI text into short chunks and converts each to audio as it arrives.
 export const streamTTS = async (
   text: string,
-  _sessionId: string,
+  sessionId: string,
   userId: string,
   ws: WebSocket
 ): Promise<void> => {
@@ -81,7 +84,10 @@ export const streamTTS = async (
     return;
   }
 
-  const voiceSelection = await resolveTtsVoiceSelection(userId);
+  const voiceSelection = await resolveTtsVoiceSelectionForSession(
+    sessionId,
+    userId
+  );
   let sequence = 0;
 
   for (const chunk of chunks) {

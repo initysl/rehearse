@@ -17,12 +17,47 @@ const difficultyLevelSchema = z.enum([
   "hostile",
 ]);
 
+const characterGenderSchema = z.enum(["male", "female"]);
+const maleVoiceSchema = z.enum(["austin", "daniel", "troy"]);
+const femaleVoiceSchema = z.enum(["autumn", "diana", "hannah"]);
+const characterVoiceSchema = z.enum([
+  "autumn",
+  "diana",
+  "hannah",
+  "austin",
+  "daniel",
+  "troy",
+]);
+const maleVoiceSet = new Set<string>(maleVoiceSchema.options);
+const femaleVoiceSet = new Set<string>(femaleVoiceSchema.options);
+
 const characterProfileSchema = z.object({
   name: z.string().min(1).max(120),
   role: z.string().min(1).max(120),
+  gender: characterGenderSchema,
+  voiceId: characterVoiceSchema,
   personality: z.array(z.string().min(1).max(120)).min(1).max(12),
   goals: z.array(z.string().min(1).max(200)).min(1).max(12),
   emotionalState: z.string().min(1).max(120),
+}).superRefine((value, ctx) => {
+  if (value.gender === "male" && !maleVoiceSet.has(value.voiceId)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["voiceId"],
+      message: "For male characters, voiceId must be one of: austin, daniel, troy.",
+    });
+  }
+
+  if (
+    value.gender === "female" &&
+    !femaleVoiceSet.has(value.voiceId)
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["voiceId"],
+      message: "For female characters, voiceId must be one of: autumn, diana, hannah.",
+    });
+  }
 });
 
 const difficultyVariantSchema = z.object({

@@ -1,11 +1,19 @@
 import OpenAI from "openai";
 import { env } from "../config/env";
 import { consumeGroqQuota, estimateTextTokens } from "../ai/groq-quota.service";
+import { db } from "../config/db";
 import { findProfileByUserId } from "../modules/users/users.service";
 import { logInfo, logWarn } from "../utils/logger";
 
 type VoiceGender = "male" | "female";
-const LEGACY_KOKORO_VOICE_ID_PATTERN = /^(?:a|b)[fm]_[a-z0-9_]+$/i;
+const MALE_VOICE_IDS = ["austin", "daniel", "troy"] as const;
+const FEMALE_VOICE_IDS = ["autumn", "diana", "hannah"] as const;
+const ALL_VOICE_IDS = [...FEMALE_VOICE_IDS, ...MALE_VOICE_IDS] as const;
+type VoiceId = (typeof ALL_VOICE_IDS)[number];
+
+const maleVoiceSet = new Set<string>(MALE_VOICE_IDS);
+const femaleVoiceSet = new Set<string>(FEMALE_VOICE_IDS);
+const allVoiceSet = new Set<string>(ALL_VOICE_IDS);
 
 const groqTts = new OpenAI({
   apiKey: env.GROQ_API_KEY,
@@ -14,7 +22,7 @@ const groqTts = new OpenAI({
 
 export interface TtsVoiceSelection {
   gender: VoiceGender;
-  voiceId?: string;
+  voiceId?: VoiceId;
 }
 
 const normalizeGender = (value: unknown): VoiceGender | null => {
@@ -23,6 +31,79 @@ const normalizeGender = (value: unknown): VoiceGender | null => {
   if (normalized === "male") return "male";
   if (normalized === "female") return "female";
   return null;
+};
+
+const normalizeVoiceId = (value: unknown): VoiceId | null => {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  return allVoiceSet.has(normalized) ? (normalized as VoiceId) : null;
+};
+
+const isVoiceAllowedForGender = (voiceId: VoiceId, gender: VoiceGender): boolean => {
+  return gender === "male"
+    ? maleVoiceSet.has(voiceId)
+    : femaleVoiceSet.has(voiceId);
+};
+
+const inferGenderFromVoice = (voiceId: VoiceId): VoiceGender => {
+  return maleVoiceSet.has(voiceId) ? "male" : "female";
+};
+
+const defaultVoiceForGender = (gender: VoiceGender): VoiceId => {
+  if (gender === "male") {
+    const configured = normalizeVoiceId(env.GROQ_TTS_VOICE_MALE);
+    return configured && maleVoiceSet.has(configured) ? configured : "troy";
+  }
+
+  const configured = normalizeVoiceId(env.GROQ_TTS_VOICE_FEMALE);
+  return configured && femaleVoiceSet.has(configured) ? configured : "autumn";
+};
+
+interface SessionScenarioVoiceRow {
+  character_profile: {
+    gender?: unknown;
+    voiceId?: unknown;
+  } | null;
+}
+
+const resolveSessionScenarioVoiceSelection = async (
+  sessionId: string,
+  userId: string
+): Promise<TtsVoiceSelection | null> => {
+  const result = await db.query<SessionScenarioVoiceRow>(
+    `SELECT sc.character_profile
+     FROM public.sessions s
+     JOIN public.scenarios sc ON sc.id = s.scenario_id
+     WHERE s.id = $1
+       AND s.user_id = $2
+     LIMIT 1`,
+    [sessionId, userId]
+  );
+
+  const profile = result.rows[0]?.character_profile;
+  if (!profile) return null;
+
+  const gender = normalizeGender(profile.gender);
+  const voiceId = normalizeVoiceId(profile.voiceId);
+
+  if (!gender && !voiceId) return null;
+  if (!voiceId && gender) return { gender };
+  if (!voiceId) return null;
+  if (!gender) {
+    return { gender: inferGenderFromVoice(voiceId), voiceId };
+  }
+
+  if (!isVoiceAllowedForGender(voiceId, gender)) {
+    logWarn("voice.tts.scenario_voice_mismatch", {
+      sessionId,
+      userId,
+      gender,
+      voiceId,
+    });
+    return { gender };
+  }
+
+  return { gender, voiceId };
 };
 
 export const resolveTtsVoiceSelection = async (
@@ -47,15 +128,46 @@ export const resolveTtsVoiceSelection = async (
     normalizeGender(preferences.voiceGender) ||
     "female";
 
-  const preferredVoiceId =
-    typeof preferences.ttsVoiceId === "string" && preferences.ttsVoiceId.trim()
-      ? preferences.ttsVoiceId.trim()
-      : undefined;
+  const preferredVoiceId = normalizeVoiceId(preferences.ttsVoiceId);
+  const preferredVoiceByGender = preferredVoiceId
+    ? isVoiceAllowedForGender(preferredVoiceId, preferenceGender)
+      ? preferredVoiceId
+      : undefined
+    : undefined;
+
+  if (preferredVoiceId && !preferredVoiceByGender) {
+    logWarn("voice.tts.profile_voice_mismatch", {
+      userId,
+      requestedVoiceId: preferredVoiceId,
+      gender: preferenceGender,
+    });
+  }
 
   return {
     gender: preferenceGender,
-    voiceId: preferredVoiceId,
+    voiceId: preferredVoiceByGender,
   };
+};
+
+export const resolveTtsVoiceSelectionForSession = async (
+  sessionId: string,
+  userId: string
+): Promise<TtsVoiceSelection> => {
+  try {
+    const sessionSelection = await resolveSessionScenarioVoiceSelection(
+      sessionId,
+      userId
+    );
+    if (sessionSelection) return sessionSelection;
+  } catch (error) {
+    logWarn("voice.tts.session_voice_lookup_failed", {
+      sessionId,
+      userId,
+      error: (error as Error).message,
+    });
+  }
+
+  return resolveTtsVoiceSelection(userId);
 };
 
 const normalizeTextForTts = (text: string): string => {
@@ -70,23 +182,19 @@ const normalizeTextForTts = (text: string): string => {
 
 const groqVoiceForSelection = (selection: TtsVoiceSelection): string => {
   if (selection.voiceId) {
-    // Ignore stale legacy Kokoro IDs.
-    if (LEGACY_KOKORO_VOICE_ID_PATTERN.test(selection.voiceId)) {
+    if (!isVoiceAllowedForGender(selection.voiceId, selection.gender)) {
       logWarn("voice.tts.invalid_groq_voice_id", {
         providedVoiceId: selection.voiceId,
-        fallbackVoice:
-          selection.gender === "male"
-            ? env.GROQ_TTS_VOICE_MALE
-            : env.GROQ_TTS_VOICE_FEMALE,
+        gender: selection.gender,
+        fallbackVoice: defaultVoiceForGender(selection.gender),
       });
-    } else {
-      return selection.voiceId;
+      return defaultVoiceForGender(selection.gender);
     }
+
+    return selection.voiceId;
   }
 
-  return selection.gender === "male"
-    ? env.GROQ_TTS_VOICE_MALE
-    : env.GROQ_TTS_VOICE_FEMALE;
+  return defaultVoiceForGender(selection.gender);
 };
 
 export const convertToSpeech = async (

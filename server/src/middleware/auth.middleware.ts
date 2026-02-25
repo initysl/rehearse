@@ -66,11 +66,9 @@ export const authenticate = async (
     const user = await supabaseAuthApi.getUserFromAccessToken(token);
     const emailConfirmed = Boolean(user.email_confirmed_at);
     if (!emailConfirmed) {
-      return res
-        .status(403)
-        .json({
-          error: 'Email confirmation required before accessing this resource',
-        });
+      return res.status(403).json({
+        error: 'Email confirmation required before accessing this resource',
+      });
     }
 
     const payload: JwtPayload = {
