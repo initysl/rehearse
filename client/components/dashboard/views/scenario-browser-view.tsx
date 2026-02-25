@@ -260,6 +260,9 @@ export function ScenarioBrowserView({
   const [editingScenarioId, setEditingScenarioId] = useState<string | null>(
     null,
   );
+  const [editingSourceScenarioId, setEditingSourceScenarioId] = useState<
+    string | null
+  >(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
@@ -276,10 +279,16 @@ export function ScenarioBrowserView({
 
   const isSubmittingForm =
     isCreatingScenario || isUpdatingScenario || isDeletingScenario;
+  const isEditingExisting = editingSourceScenarioId !== null;
+  const isForkingDefault = isEditingExisting && !editingScenarioId;
 
   const startEditSelected = () => {
-    if (!selectedScenario?.isCustom) return;
+    if (!selectedScenario) return;
+    setEditingSourceScenarioId(selectedScenario.id);
     setEditingScenarioId(selectedScenario.id);
+    if (!selectedScenario.isCustom) {
+      setEditingScenarioId(null);
+    }
     setFormState(mapScenarioToForm(selectedScenario));
     setFormError(null);
     setFormSuccess(null);
@@ -287,6 +296,7 @@ export function ScenarioBrowserView({
 
   const resetForm = () => {
     setEditingScenarioId(null);
+    setEditingSourceScenarioId(null);
     setFormState(defaultFormState);
     setFormError(null);
     setFormSuccess(null);
@@ -326,6 +336,11 @@ export function ScenarioBrowserView({
       if (editingScenarioId) {
         await onUpdateScenario({ scenarioId: editingScenarioId, payload });
         setFormSuccess('Custom scenario updated.');
+      } else if (isForkingDefault) {
+        await onCreateScenario(payload);
+        setFormSuccess('Custom scenario created from default.');
+        setEditingSourceScenarioId(null);
+        setFormState(defaultFormState);
       } else {
         await onCreateScenario(payload);
         setFormSuccess('Custom scenario created.');
@@ -490,15 +505,6 @@ export function ScenarioBrowserView({
               <>
                 <button
                   type='button'
-                  onClick={startEditSelected}
-                  disabled={isSubmittingForm}
-                  className='inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/80 disabled:opacity-50'
-                >
-                  <FiEdit2 size={12} />
-                  Edit selected
-                </button>
-                <button
-                  type='button'
                   onClick={handleDeleteSelected}
                   disabled={isSubmittingForm}
                   className='inline-flex items-center gap-1 rounded-lg border border-rose-400/35 bg-rose-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-rose-200 disabled:opacity-50'
@@ -508,6 +514,15 @@ export function ScenarioBrowserView({
                 </button>
               </>
             ) : null}
+            <button
+              type='button'
+              onClick={startEditSelected}
+              disabled={isSubmittingForm || !selectedScenario}
+              className='inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/80 disabled:opacity-50'
+            >
+              <FiEdit2 size={12} />
+              Edit selected
+            </button>
           </div>
         </section>
 
@@ -517,9 +532,19 @@ export function ScenarioBrowserView({
               <FiPlus size={14} />
               {editingScenarioId
                 ? 'Edit custom scenario'
-                : 'Create custom scenario'}
+                : isForkingDefault
+                  ? 'Edit default scenario as custom'
+                  : 'Create custom scenario'}
             </p>
             {editingScenarioId ? (
+              <button
+                type='button'
+                onClick={resetForm}
+                className='rounded-md border border-white/20 px-2 py-1 text-[11px] uppercase tracking-widest text-white/70 transition hover:text-white'
+              >
+                Cancel edit
+              </button>
+            ) : isForkingDefault ? (
               <button
                 type='button'
                 onClick={resetForm}
@@ -531,8 +556,9 @@ export function ScenarioBrowserView({
           </div>
 
           <p className='mb-3 text-xs text-white/55'>
-            You fill in core setup. Personality, goals, emotional state, and
-            difficulty behavior are generated automatically.
+            {isForkingDefault
+              ? 'You are editing a default scenario. Saving creates your custom copy.'
+              : 'You fill in core setup. Personality, goals, emotional state, and difficulty behavior are generated automatically.'}
           </p>
 
           <div className='space-y-2.5'>
@@ -712,7 +738,11 @@ export function ScenarioBrowserView({
               ) : (
                 <FiBookOpen size={13} />
               )}
-              {editingScenarioId ? 'Save changes' : 'Create scenario'}
+              {editingScenarioId
+                ? 'Save changes'
+                : isForkingDefault
+                  ? 'Create custom copy'
+                  : 'Create scenario'}
             </button>
 
             {formSuccess ? (
