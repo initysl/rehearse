@@ -6,7 +6,6 @@ import {
   FiAlertCircle,
   FiCheckCircle,
   FiClock,
-  FiLoader,
   FiZap,
 } from 'react-icons/fi';
 import { ApiError } from '@/lib/api/client';
@@ -41,6 +40,7 @@ import {
   useStartSessionMutation,
 } from '@/lib/hooks/use-sessions';
 import { useVoiceSession } from '@/lib/hooks/use-voice-session';
+import { ConsoleSkeleton } from '@/components/dashboard/console-skeleton';
 
 const formatError = (error: unknown): string => {
   if (!error) return 'Unknown error';
@@ -430,15 +430,7 @@ export default function ConsolePage() {
   ];
 
   if (!isAuthResolved) {
-    return (
-      <main className='relative z-10 flex min-h-screen items-center justify-center px-6 text-white'>
-        <FiLoader
-          className='animate-spin rounded-full border-2 text-white border-white border-t-[#e77212]'
-          aria-hidden='true'
-          size={40}
-        />
-      </main>
-    );
+    return <ConsoleSkeleton />;
   }
 
   if (!isAuthenticated) {

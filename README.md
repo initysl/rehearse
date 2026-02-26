@@ -27,7 +27,7 @@ rehearse/
 Planned layered architecture:
 - Frontend: Next.js + TypeScript
 - Backend/API: Express + TypeScript
-- AI Engine: Groq (Llama 3.3 70B + Whisper STT), local Kokoro TTS (or Groq TTS fallback)
+- AI Engine: Groq (Llama 3.3 70B + Whisper STT + TTS), optional local Kokoro TTS fallback
 - Data: PostgreSQL (persistent), Redis (cache/session/rate limit)
 - Realtime: SSE for streaming text, WebSocket for voice
 
@@ -59,7 +59,7 @@ What is still scaffold/TODO:
 - Frontend: Next.js, React, TypeScript, Tailwind CSS
 - Backend: Node.js, Express, TypeScript
 - Data: PostgreSQL, Redis
-- AI/Voice: Groq SDK (LLM + Whisper STT), Kokoro local TTS or Groq TTS
+- AI/Voice: Groq SDK (LLM + Whisper STT + TTS), optional Kokoro local fallback
 - Security/Infra: Helmet, CORS, Supabase Auth, RLS, rate limiting
 
 ## Prerequisites
