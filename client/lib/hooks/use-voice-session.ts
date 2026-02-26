@@ -49,14 +49,13 @@ type UseVoiceSessionResult = {
 
 const VOICE_CHUNK_MS = 250;
 
-const getVoiceWsUrl = (sessionId: string, accessToken: string): string => {
+const getVoiceWsUrl = (sessionId: string): string => {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
   const httpUrl = new URL(apiBase);
   const wsProtocol = httpUrl.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsBase = `${wsProtocol}//${httpUrl.host}`;
   const wsUrl = new URL('/ws/voice', wsBase);
   wsUrl.searchParams.set('sessionId', sessionId);
-  wsUrl.searchParams.set('token', accessToken);
   return wsUrl.toString();
 };
 
@@ -69,6 +68,7 @@ export const useVoiceSession = ({
   onResponseComplete,
   onError,
 }: UseVoiceSessionOptions): UseVoiceSessionResult => {
+  void accessToken;
   const wsRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -226,7 +226,7 @@ export const useVoiceSession = ({
   }, []);
 
   useEffect(() => {
-    if (!enabled || !sessionId || !accessToken || !isSupported) {
+    if (!enabled || !sessionId || !isSupported) {
       wsRef.current?.close();
       wsRef.current = null;
       stopActiveMediaRecorder(false);
@@ -238,7 +238,7 @@ export const useVoiceSession = ({
       return;
     }
 
-    const ws = new WebSocket(getVoiceWsUrl(sessionId, accessToken));
+    const ws = new WebSocket(getVoiceWsUrl(sessionId));
     ws.binaryType = 'arraybuffer';
     wsRef.current = ws;
     setConnectionState('connecting');
@@ -358,7 +358,6 @@ export const useVoiceSession = ({
       setStatus('idle');
     };
   }, [
-    accessToken,
     clearAudioPlayback,
     enabled,
     isSupported,

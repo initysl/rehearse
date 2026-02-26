@@ -10,6 +10,7 @@ const MALE_VOICE_IDS = ["austin", "daniel", "troy"] as const;
 const FEMALE_VOICE_IDS = ["autumn", "diana", "hannah"] as const;
 const ALL_VOICE_IDS = [...FEMALE_VOICE_IDS, ...MALE_VOICE_IDS] as const;
 type VoiceId = (typeof ALL_VOICE_IDS)[number];
+type TtsProvider = "groq" | "kokoro";
 
 const maleVoiceSet = new Set<string>(MALE_VOICE_IDS);
 const femaleVoiceSet = new Set<string>(FEMALE_VOICE_IDS);
@@ -49,7 +50,7 @@ const inferGenderFromVoice = (voiceId: VoiceId): VoiceGender => {
   return maleVoiceSet.has(voiceId) ? "male" : "female";
 };
 
-const defaultVoiceForGender = (gender: VoiceGender): VoiceId => {
+const defaultGroqVoiceForGender = (gender: VoiceGender): VoiceId => {
   if (gender === "male") {
     const configured = normalizeVoiceId(env.GROQ_TTS_VOICE_MALE);
     return configured && maleVoiceSet.has(configured) ? configured : "troy";
@@ -57,6 +58,20 @@ const defaultVoiceForGender = (gender: VoiceGender): VoiceId => {
 
   const configured = normalizeVoiceId(env.GROQ_TTS_VOICE_FEMALE);
   return configured && femaleVoiceSet.has(configured) ? configured : "autumn";
+};
+
+const defaultKokoroVoiceForGender = (gender: VoiceGender): string => {
+  if (gender === "male") return env.KOKORO_TTS_VOICE_MALE;
+  return env.KOKORO_TTS_VOICE_FEMALE;
+};
+
+const kokoroVoiceOverrides: Record<VoiceId, string> = {
+  autumn: env.KOKORO_TTS_VOICE_AUTUMN,
+  diana: env.KOKORO_TTS_VOICE_DIANA,
+  hannah: env.KOKORO_TTS_VOICE_HANNAH,
+  austin: env.KOKORO_TTS_VOICE_AUSTIN,
+  daniel: env.KOKORO_TTS_VOICE_DANIEL,
+  troy: env.KOKORO_TTS_VOICE_TROY,
 };
 
 interface SessionScenarioVoiceRow {
@@ -186,31 +201,32 @@ const groqVoiceForSelection = (selection: TtsVoiceSelection): string => {
       logWarn("voice.tts.invalid_groq_voice_id", {
         providedVoiceId: selection.voiceId,
         gender: selection.gender,
-        fallbackVoice: defaultVoiceForGender(selection.gender),
+        fallbackVoice: defaultGroqVoiceForGender(selection.gender),
       });
-      return defaultVoiceForGender(selection.gender);
+      return defaultGroqVoiceForGender(selection.gender);
     }
 
     return selection.voiceId;
   }
 
-  return defaultVoiceForGender(selection.gender);
+  return defaultGroqVoiceForGender(selection.gender);
 };
 
-export const convertToSpeech = async (
-  text: string,
-  selection: TtsVoiceSelection = { gender: "female" }
+const kokoroVoiceForSelection = (selection: TtsVoiceSelection): string => {
+  if (selection.voiceId) {
+    const configured = kokoroVoiceOverrides[selection.voiceId]?.trim();
+    if (configured) return configured;
+  }
+
+  return defaultKokoroVoiceForGender(selection.gender);
+};
+
+const groqProvider = async (
+  normalizedText: string,
+  selection: TtsVoiceSelection
 ): Promise<Buffer> => {
-  const normalizedText = normalizeTextForTts(text);
   const voice = groqVoiceForSelection(selection);
   const estimatedTokens = estimateTextTokens(normalizedText);
-
-  logInfo("voice.tts.providers_selected", {
-    providers: ["groq"],
-    textChars: normalizedText.length,
-    model: env.GROQ_TTS_MODEL,
-    voice,
-  });
 
   await consumeGroqQuota({
     model: env.GROQ_TTS_MODEL,
@@ -262,4 +278,140 @@ export const convertToSpeech = async (
     });
     throw new Error(message);
   }
+};
+
+type KokoroResponse = {
+  audio_base64?: string;
+};
+
+const kokoroProvider = async (
+  normalizedText: string,
+  selection: TtsVoiceSelection
+): Promise<Buffer> => {
+  const voice = kokoroVoiceForSelection(selection);
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), env.TTS_TIMEOUT_MS);
+  const startedAt = Date.now();
+
+  try {
+    const response = await fetch(env.KOKORO_TTS_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "audio/wav,application/json",
+      },
+      body: JSON.stringify({
+        text: normalizedText,
+        voice,
+        lang_code: env.KOKORO_TTS_LANG_CODE,
+        speed: env.KOKORO_TTS_SPEED,
+      }),
+      signal: timeoutController.signal,
+    });
+
+    if (!response.ok) {
+      const rawErrorBody = await response.text();
+      const errorBody = rawErrorBody.trim().slice(0, 240);
+      throw new Error(
+        `Kokoro TTS request failed with ${response.status}${
+          errorBody ? `: ${errorBody}` : ""
+        }`
+      );
+    }
+
+    const contentType = (response.headers.get("content-type") || "").toLowerCase();
+    let buffer: Buffer;
+    if (contentType.includes("application/json")) {
+      const payload = (await response.json()) as KokoroResponse;
+      if (!payload.audio_base64) {
+        throw new Error("Kokoro JSON response did not include audio_base64.");
+      }
+      buffer = Buffer.from(payload.audio_base64, "base64");
+    } else {
+      buffer = Buffer.from(await response.arrayBuffer());
+    }
+
+    if (!buffer.length) {
+      throw new Error("Kokoro TTS returned an empty audio payload.");
+    }
+
+    logInfo("voice.tts.provider_succeeded", {
+      provider: "kokoro",
+      voice,
+      latencyMs: Date.now() - startedAt,
+      bytes: buffer.length,
+    });
+    return buffer;
+  } catch (error) {
+    const message =
+      (error as Error).name === "AbortError"
+        ? `Kokoro TTS request timed out after ${env.TTS_TIMEOUT_MS}ms`
+        : (error as Error).message || "Unknown Kokoro TTS failure";
+
+    logWarn("voice.tts.provider_failed", {
+      provider: "kokoro",
+      voice,
+      latencyMs: Date.now() - startedAt,
+      error: message,
+    });
+    throw new Error(message);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+const providerChain = (): TtsProvider[] => {
+  const providers: TtsProvider[] = [];
+
+  if (env.TTS_PROVIDER !== "none") providers.push(env.TTS_PROVIDER);
+  if (
+    env.TTS_FALLBACK_PROVIDER !== "none" &&
+    !providers.includes(env.TTS_FALLBACK_PROVIDER)
+  ) {
+    providers.push(env.TTS_FALLBACK_PROVIDER);
+  }
+
+  return providers;
+};
+
+export const convertToSpeech = async (
+  text: string,
+  selection: TtsVoiceSelection = { gender: "female" }
+): Promise<Buffer> => {
+  const normalizedText = normalizeTextForTts(text);
+  const providers = providerChain();
+
+  if (!providers.length) {
+    throw new Error(
+      "No TTS provider configured. Set TTS_PROVIDER to kokoro or groq."
+    );
+  }
+
+  logInfo("voice.tts.providers_selected", {
+    providers,
+    textChars: normalizedText.length,
+    primaryProvider: providers[0],
+  });
+
+  let lastError: Error | null = null;
+
+  for (const provider of providers) {
+    try {
+      if (provider === "kokoro") {
+        return await kokoroProvider(normalizedText, selection);
+      }
+      return await groqProvider(normalizedText, selection);
+    } catch (error) {
+      lastError = error as Error;
+      if (provider !== providers[providers.length - 1]) {
+        logWarn("voice.tts.fallback_attempt", {
+          failedProvider: provider,
+          nextProvider: providers[providers.indexOf(provider) + 1],
+          error: lastError.message,
+        });
+      }
+    }
+  }
+
+  throw new Error(lastError?.message || "All TTS providers failed.");
 };

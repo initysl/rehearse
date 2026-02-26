@@ -1,5 +1,3 @@
-import { getStoredAccessToken } from "../auth-token";
-
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
 
@@ -60,7 +58,7 @@ const readResponseBody = async (response: Response): Promise<unknown> => {
 
 const createHeaders = (options: ApiRequestOptions): HeadersInit => {
   const headers = new Headers(options.headers || {});
-  const token = options.accessToken ?? getStoredAccessToken();
+  const token = options.accessToken;
 
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);

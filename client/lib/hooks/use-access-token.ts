@@ -1,15 +1,11 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { getStoredAccessToken, setStoredAccessToken } from "../auth-token";
 
 export const useAccessToken = () => {
-  const [accessToken, setAccessTokenState] = useState<string | null>(() =>
-    getStoredAccessToken()
-  );
+  const [accessToken, setAccessTokenState] = useState<string | null>(null);
 
   const setAccessToken = useCallback((token: string | null) => {
-    setStoredAccessToken(token);
     setAccessTokenState(token);
   }, []);
 

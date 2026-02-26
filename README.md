@@ -27,7 +27,7 @@ rehearse/
 Planned layered architecture:
 - Frontend: Next.js + TypeScript
 - Backend/API: Express + TypeScript
-- AI Engine: Groq (Llama 3.3 70B), Whisper STT, Groq TTS
+- AI Engine: Groq (Llama 3.3 70B + Whisper STT), local Kokoro TTS (or Groq TTS fallback)
 - Data: PostgreSQL (persistent), Redis (cache/session/rate limit)
 - Realtime: SSE for streaming text, WebSocket for voice
 
@@ -45,7 +45,7 @@ What exists now in code:
 - Supabase-backed auth (`email/password` + Google OAuth via backend callback)
 - Protected profile routes with token validation middleware
 - AI prompt builders and Groq streaming helper
-- Voice pipeline components (WebSocket handler, Whisper STT, Groq TTS)
+- Voice pipeline components (WebSocket handler, Whisper STT, configurable TTS provider)
 - PostgreSQL SQL migration files for core tables
 - Redis and PostgreSQL configuration wiring
 - Migration runner script (`server/src/db/migrate.ts`)
@@ -59,7 +59,7 @@ What is still scaffold/TODO:
 - Frontend: Next.js, React, TypeScript, Tailwind CSS
 - Backend: Node.js, Express, TypeScript
 - Data: PostgreSQL, Redis
-- AI/Voice: Groq SDK (LLM + Whisper STT + TTS)
+- AI/Voice: Groq SDK (LLM + Whisper STT), Kokoro local TTS or Groq TTS
 - Security/Infra: Helmet, CORS, Supabase Auth, RLS, rate limiting
 
 ## Prerequisites

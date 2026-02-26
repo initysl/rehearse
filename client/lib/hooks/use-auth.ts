@@ -15,11 +15,12 @@ import {
 import { queryKeys } from "../query/keys";
 
 export const useMeQuery = (accessToken: string | null) => {
+  void accessToken;
   return useQuery({
-    queryKey: queryKeys.auth.me(accessToken ? "authed" : "anon"),
+    queryKey: queryKeys.auth.me("cookie"),
     queryFn: async () => {
       try {
-        return await getMe(accessToken);
+        return await getMe();
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
           return null;
@@ -39,7 +40,8 @@ export const useLoginMutation = (
   return useMutation({
     mutationFn: (payload: LoginInput) => loginWithEmail(payload),
     onSuccess: (result) => {
-      setAccessToken(result.session?.accessToken || null);
+      void result;
+      setAccessToken(null);
       void queryClient.invalidateQueries({ queryKey: ["auth"] });
     },
   });
@@ -53,9 +55,8 @@ export const useRegisterMutation = (
   return useMutation({
     mutationFn: (payload: RegisterInput) => registerWithEmail(payload),
     onSuccess: (result) => {
-      if (result.session?.accessToken) {
-        setAccessToken(result.session.accessToken);
-      }
+      void result;
+      setAccessToken(null);
       void queryClient.invalidateQueries({ queryKey: ["auth"] });
     },
   });
@@ -69,7 +70,8 @@ export const useRefreshMutation = (
   return useMutation({
     mutationFn: () => refreshSession(),
     onSuccess: (result) => {
-      setAccessToken(result.session?.accessToken || null);
+      void result;
+      setAccessToken(null);
       void queryClient.invalidateQueries({ queryKey: ["auth"] });
     },
   });

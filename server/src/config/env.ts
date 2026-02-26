@@ -6,6 +6,29 @@ const parseBoolean = (value: string | undefined, fallback: boolean): boolean => 
   return value.toLowerCase() !== "false";
 };
 
+const parseNumber = (value: string | undefined, fallback: number): number => {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const parseDecimal = (value: string | undefined, fallback: number): number => {
+  if (!value) return fallback;
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const parseTtsProvider = (
+  value: string | undefined,
+  fallback: "groq" | "kokoro" | "none"
+): "groq" | "kokoro" | "none" => {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "groq" || normalized === "kokoro" || normalized === "none") {
+    return normalized;
+  }
+  return fallback;
+};
+
 const required = (key: string): string => {
   const value = process.env[key];
   if (!value) throw new Error(`Missing required environment variable: ${key}`);
@@ -50,6 +73,22 @@ export const env = {
   GROQ_TTS_MODEL: process.env.GROQ_TTS_MODEL || "canopylabs/orpheus-v1-english",
   GROQ_TTS_VOICE_MALE: process.env.GROQ_TTS_VOICE_MALE || "troy",
   GROQ_TTS_VOICE_FEMALE: process.env.GROQ_TTS_VOICE_FEMALE || "autumn",
+  TTS_PROVIDER: parseTtsProvider(process.env.TTS_PROVIDER, "groq"),
+  TTS_FALLBACK_PROVIDER: parseTtsProvider(process.env.TTS_FALLBACK_PROVIDER, "none"),
+  TTS_TIMEOUT_MS: parseNumber(process.env.TTS_TIMEOUT_MS, 60000),
+  KOKORO_TTS_URL: process.env.KOKORO_TTS_URL || "http://127.0.0.1:8001/tts",
+  KOKORO_TTS_LANG_CODE: process.env.KOKORO_TTS_LANG_CODE || "a",
+  KOKORO_TTS_SPEED: parseDecimal(process.env.KOKORO_TTS_SPEED, 1.0),
+  KOKORO_TTS_VOICE_MALE:
+    process.env.KOKORO_TTS_VOICE_MALE || "am_fenrir",
+  KOKORO_TTS_VOICE_FEMALE:
+    process.env.KOKORO_TTS_VOICE_FEMALE || "af_heart",
+  KOKORO_TTS_VOICE_AUTUMN: process.env.KOKORO_TTS_VOICE_AUTUMN || "",
+  KOKORO_TTS_VOICE_DIANA: process.env.KOKORO_TTS_VOICE_DIANA || "",
+  KOKORO_TTS_VOICE_HANNAH: process.env.KOKORO_TTS_VOICE_HANNAH || "",
+  KOKORO_TTS_VOICE_AUSTIN: process.env.KOKORO_TTS_VOICE_AUSTIN || "",
+  KOKORO_TTS_VOICE_DANIEL: process.env.KOKORO_TTS_VOICE_DANIEL || "",
+  KOKORO_TTS_VOICE_TROY: process.env.KOKORO_TTS_VOICE_TROY || "",
   GROQ_STREAM_TIMEOUT_MS: parseInt(process.env.GROQ_STREAM_TIMEOUT_MS || "30000", 10),
   GROQ_COMPLETION_TIMEOUT_MS: parseInt(
     process.env.GROQ_COMPLETION_TIMEOUT_MS || "15000",

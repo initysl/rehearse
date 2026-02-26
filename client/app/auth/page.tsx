@@ -123,7 +123,7 @@ export default function AuthPage() {
     reValidateMode: 'onChange',
   });
 
-  const isAuthenticated = Boolean(accessToken && meQuery.data?.user);
+  const isAuthenticated = Boolean(meQuery.data?.user);
   const isSubmitting = loginMutation.isPending || registerMutation.isPending;
 
   const authError = useMemo(

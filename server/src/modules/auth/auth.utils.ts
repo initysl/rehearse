@@ -60,6 +60,12 @@ const cookieBaseOptions = {
 
 const parseCookies = (req: Request): Record<string, string> => {
   const rawCookie = req.headers.cookie;
+  return parseCookiesFromRawHeader(rawCookie);
+};
+
+export const parseCookiesFromRawHeader = (
+  rawCookie: string | undefined
+): Record<string, string> => {
   if (!rawCookie) return {};
 
   return rawCookie
@@ -74,6 +80,13 @@ const parseCookies = (req: Request): Record<string, string> => {
       acc[key] = decodeURIComponent(value);
       return acc;
     }, {});
+};
+
+export const getAccessTokenFromCookieHeader = (
+  rawCookie: string | undefined
+): string | null => {
+  const cookies = parseCookiesFromRawHeader(rawCookie);
+  return cookies[ACCESS_TOKEN_COOKIE] || null;
 };
 
 export const getAccessTokenFromCookies = (req: Request): string | null => {

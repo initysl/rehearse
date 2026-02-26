@@ -1,4 +1,3 @@
-import { getStoredAccessToken } from "../auth-token";
 import { apiRequest, getApiBaseUrl, ApiError } from "./client";
 import {
   ClearSessionHistoryResponse,
@@ -102,7 +101,7 @@ interface StreamSessionMessageOptions {
 export const streamSessionMessage = async (
   options: StreamSessionMessageOptions
 ): Promise<string> => {
-  const token = options.accessToken ?? getStoredAccessToken();
+  const token = options.accessToken;
   const response = await fetch(new URL(`/sessions/${options.sessionId}/message`, getApiBaseUrl()), {
     method: "POST",
     headers: {

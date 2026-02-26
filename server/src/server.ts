@@ -6,6 +6,7 @@ import { db } from "./config/db";
 import { connectRedis } from "./config/redis";
 import { startFeedbackQueueWorker } from "./jobs/feedback.queue";
 import { supabaseAuthApi, supabaseConfig } from "./config/supabase";
+import { getAccessTokenFromCookieHeader } from "./modules/auth/auth.utils";
 import { logError, logInfo, logWarn } from "./utils/logger";
 import { handleVoiceSession } from "./voice/websocket.handler";
 
@@ -53,13 +54,17 @@ wss.on("connection", async (ws, req) => {
   try {
     const url = new URL(req.url || "/ws/voice", env.SERVER_URL);
     const sessionId = url.searchParams.get("sessionId");
-    const token = url.searchParams.get("token");
+    const tokenFromQuery = url.searchParams.get("token");
+    const tokenFromCookie = getAccessTokenFromCookieHeader(req.headers.cookie);
+    const token = tokenFromCookie;
 
     if (!sessionId || !token) {
       logWarn("voice.ws.reject.missing_params", {
         sessionId: sessionId || null,
+        hasCookieToken: Boolean(tokenFromCookie),
+        hasQueryToken: Boolean(tokenFromQuery),
       });
-      ws.close(1008, "Missing sessionId or token");
+      ws.close(1008, "Missing sessionId or auth cookie");
       return;
     }
 
