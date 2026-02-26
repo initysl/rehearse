@@ -18,6 +18,7 @@ import {
 import { z } from 'zod';
 import { ApiError } from '@/lib/api/client';
 import { useAccessToken } from '@/lib/hooks/use-access-token';
+import { mapApiErrorToUserMessage } from '@/lib/errors/user-message';
 import {
   beginGoogleOAuth,
   useLoginMutation,
@@ -51,6 +52,9 @@ type AuthFormValues = z.infer<typeof authSchema>;
 const formatError = (error: unknown): string => {
   if (!error) return 'Something went wrong. Please try again.';
   if (error instanceof ApiError) {
+    if (error.code) {
+      return mapApiErrorToUserMessage(error, 'Something went wrong. Please try again.');
+    }
     if (error.status === 401 || error.status === 403) {
       return 'Invalid email or password.';
     }

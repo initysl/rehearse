@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { logError } from '../utils/logger';
+import { toSafeHttpErrorMessage } from '../utils/public-error';
 
 export interface AppError extends Error {
   statusCode?: number;
@@ -13,14 +14,15 @@ export const errorHandler = (
   _next: NextFunction,
 ) => {
   const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
+  const internalMessage = err.message || 'Internal Server Error';
+  const publicError = toSafeHttpErrorMessage(statusCode, internalMessage);
 
   logError('http.request.error', {
     requestId: req.requestId,
     method: req.method,
     path: req.path,
     statusCode,
-    message,
+    message: internalMessage,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 
@@ -29,8 +31,8 @@ export const errorHandler = (
   }
 
   res.status(statusCode).json({
-    error: message,
+    error: publicError.message,
+    code: publicError.code,
     requestId: req.requestId,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };

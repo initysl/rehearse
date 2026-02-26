@@ -70,7 +70,7 @@ Base URL (local): `http://localhost:5000`
 
 ## Response Notes
 
-- Errors return: `{ "error": string, "requestId"?: string }`
+- Errors return: `{ "error": string, "code": string, "requestId"?: string }`
 - Every response includes `x-request-id` header.
 
 ## Voice WebSocket
@@ -83,4 +83,5 @@ Base URL (local): `http://localhost:5000`
   - Client streams binary `audio_chunk` frames
   - Client sends JSON `{ "type": "audio_end" }`
   - Server returns transcript + assistant text + streamed audio chunks
-  - If audio synthesis is unavailable, server emits status `{ "type": "status", "message": "audio_unavailable" }` and still completes text response.
+  - If audio synthesis is unavailable, server emits status `{ "type": "status", "message": "audio_unavailable", "code": string, "reason": string }` and still completes text response.
+  - Non-fatal/terminal error events may include `{ "type": "error", "code": string, "message": string }`.

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { mapVoiceErrorToUserMessage } from '../errors/user-message';
 
 type VoiceConnectionState = 'disconnected' | 'connecting' | 'connected';
 type VoiceStatus =
@@ -19,6 +20,7 @@ type VoiceServerMessage = {
   message?: string;
   text?: string;
   reason?: string;
+  code?: string;
 };
 
 type UseVoiceSessionOptions = {
@@ -274,10 +276,10 @@ export const useVoiceSession = ({
 
           if (message === 'audio_unavailable') {
             setStatus('idle');
-            const reasonText = parsed.reason?.trim();
-            const fullError = reasonText
-              ? `Audio is unavailable right now: ${reasonText}`
-              : 'Audio is unavailable right now. Showing text only.';
+            const fullError = mapVoiceErrorToUserMessage({
+              code: parsed.code,
+              fallback: parsed.reason,
+            });
             setLastError(fullError);
             callbacksRef.current.onError?.(
               fullError,
@@ -310,7 +312,10 @@ export const useVoiceSession = ({
         }
 
         if (parsed.type === 'error') {
-          const message = parsed.message || 'Voice processing failed';
+          const message = mapVoiceErrorToUserMessage({
+            code: parsed.code,
+            fallback: parsed.message,
+          });
           setStatus('error');
           setLastError(message);
           callbacksRef.current.onError?.(message);

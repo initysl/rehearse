@@ -8,7 +8,6 @@ import {
   FiClock,
   FiZap,
 } from 'react-icons/fi';
-import { ApiError } from '@/lib/api/client';
 import type {
   CreateCustomScenarioInput,
   DifficultyLevel,
@@ -41,12 +40,10 @@ import {
 } from '@/lib/hooks/use-sessions';
 import { useVoiceSession } from '@/lib/hooks/use-voice-session';
 import { ConsoleSkeleton } from '@/components/dashboard/console-skeleton';
+import { mapApiErrorToUserMessage } from '@/lib/errors/user-message';
 
 const formatError = (error: unknown): string => {
-  if (!error) return 'Unknown error';
-  if (error instanceof ApiError) return `${error.message} (${error.status})`;
-  if (error instanceof Error) return error.message;
-  return String(error);
+  return mapApiErrorToUserMessage(error, 'Request failed.');
 };
 
 export default function ConsolePage() {

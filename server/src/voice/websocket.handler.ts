@@ -3,6 +3,10 @@ import { transcribeAudio } from "./stt.service";
 import { streamTTS } from "./audio.pipeline";
 import { generateSessionReplyText } from "../modules/messages/messages.service";
 import { logError, logInfo, logWarn } from "../utils/logger";
+import {
+  toSafeVoiceProcessingMessage,
+  toSafeVoiceUnavailableReason,
+} from "../utils/public-error";
 
 export const handleVoiceSession = (
   ws: WebSocket,
@@ -42,7 +46,13 @@ export const handleVoiceSession = (
 
       if (message.type === "audio_end") {
         if (audioChunks.length === 0) {
-          ws.send(JSON.stringify({ type: "error", message: "No audio received" }));
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              code: "NO_AUDIO_RECEIVED",
+              message: "No audio received",
+            })
+          );
           return;
         }
 
@@ -113,6 +123,7 @@ export const handleVoiceSession = (
           });
         } catch (ttsError) {
           const ttsMessage = (ttsError as Error).message || "Unknown TTS failure";
+          const safeReason = toSafeVoiceUnavailableReason(ttsMessage);
           logWarn("voice.ws.tts_unavailable", {
             sessionId: context.sessionId,
             userId: context.userId,
@@ -123,7 +134,8 @@ export const handleVoiceSession = (
             JSON.stringify({
               type: "status",
               message: "audio_unavailable",
-              reason: ttsMessage,
+              code: safeReason.code,
+              reason: safeReason.message,
             })
           );
           ws.send(JSON.stringify({ type: "response_complete" }));
@@ -131,13 +143,20 @@ export const handleVoiceSession = (
         ws.send(JSON.stringify({ type: "status", message: "idle" }));
       }
     } catch (err) {
-      const message = (err as Error).message || "Voice processing failed";
+      const internalMessage = (err as Error).message || "Voice processing failed";
+      const safeMessage = toSafeVoiceProcessingMessage();
       logError("voice.ws.processing_failed", {
         sessionId: context.sessionId,
         userId: context.userId,
-        error: message,
+        error: internalMessage,
       });
-      ws.send(JSON.stringify({ type: "error", message }));
+      ws.send(
+        JSON.stringify({
+          type: "error",
+          code: safeMessage.code,
+          message: safeMessage.message,
+        })
+      );
     }
   });
 

@@ -4,12 +4,20 @@ const API_BASE_URL =
 export class ApiError extends Error {
   readonly status: number;
   readonly body: unknown;
+  readonly code?: string;
 
   constructor(message: string, status: number, body: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.body = body;
+    this.code =
+      typeof body === "object" &&
+      body !== null &&
+      "code" in body &&
+      typeof (body as { code?: unknown }).code === "string"
+        ? (body as { code: string }).code
+        : undefined;
   }
 }
 
