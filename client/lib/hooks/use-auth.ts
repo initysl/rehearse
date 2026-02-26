@@ -17,7 +17,7 @@ import { queryKeys } from "../query/keys";
 export const useMeQuery = (accessToken: string | null) => {
   void accessToken;
   return useQuery({
-    queryKey: queryKeys.auth.me("cookie"),
+    queryKey: queryKeys.auth.me("authed"),
     queryFn: async () => {
       try {
         return await getMe();

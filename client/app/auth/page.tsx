@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -90,7 +90,7 @@ function useSubmitRateLimit() {
   return { isRateLimited, recordAttempt };
 }
 
-export default function AuthPage() {
+function AuthPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { accessToken, setAccessToken } = useAccessToken();
@@ -530,5 +530,33 @@ export default function AuthPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+function AuthPageFallback() {
+  return (
+    <main
+      className='relative min-h-screen overflow-x-hidden'
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
+      <div className='relative z-10 mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-12 sm:px-6'>
+        <section className='w-full max-w-md rounded-3xl border border-white/8 bg-[#131108]/80 p-6 backdrop-blur-xl sm:p-8'>
+          <div className='h-8 w-36 animate-pulse rounded-md bg-white/10' />
+          <div className='mt-3 h-4 w-56 animate-pulse rounded-md bg-white/8' />
+          <div className='mt-8 h-12 animate-pulse rounded-full bg-white/8' />
+          <div className='mt-4 h-12 animate-pulse rounded-xl bg-white/8' />
+          <div className='mt-3 h-12 animate-pulse rounded-xl bg-white/8' />
+          <div className='mt-3 h-12 animate-pulse rounded-xl bg-white/8' />
+        </section>
+      </div>
+    </main>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<AuthPageFallback />}>
+      <AuthPageContent />
+    </Suspense>
   );
 }

@@ -58,6 +58,14 @@ const cookieBaseOptions = {
   path: "/",
 };
 
+const clientOrigin = (() => {
+  try {
+    return new URL(env.CLIENT_URL).origin;
+  } catch {
+    return env.CLIENT_URL;
+  }
+})();
+
 const parseCookies = (req: Request): Record<string, string> => {
   const rawCookie = req.headers.cookie;
   return parseCookiesFromRawHeader(rawCookie);
@@ -162,14 +170,23 @@ export const clearGoogleOauthStateCookie = (res: Response) => {
 };
 
 const isAllowedAbsoluteRedirect = (target: string): boolean => {
-  return target.startsWith(env.CLIENT_URL);
+  try {
+    const targetUrl = new URL(target);
+    return targetUrl.origin === clientOrigin;
+  } catch {
+    return false;
+  }
 };
 
 export const sanitizeRedirectTarget = (next?: string): string => {
   if (!next) return env.AUTH_SUCCESS_REDIRECT_URL;
 
   if (next.startsWith("/")) {
-    return `${env.CLIENT_URL}${next}`;
+    try {
+      return new URL(next, env.CLIENT_URL).toString();
+    } catch {
+      return env.AUTH_SUCCESS_REDIRECT_URL;
+    }
   }
 
   if (isAllowedAbsoluteRedirect(next)) {

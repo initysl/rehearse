@@ -32,6 +32,17 @@ import {
 
 const isZodError = (error: unknown): error is ZodError => error instanceof ZodError;
 
+type PublicAuthResponse = {
+  user: {
+    id: string;
+    email: string | null;
+    role: string;
+    emailConfirmed: boolean;
+  };
+  session: null;
+  requiresEmailConfirmation: boolean;
+};
+
 const handleControllerError = (
   error: unknown,
   next: NextFunction
@@ -63,14 +74,17 @@ export const register = async (
   try {
     const payload = registerSchema.parse(req.body);
     const result = await registerWithEmailPassword(payload);
-    const responsePayload =
-      result.user.emailConfirmed && result.session
-        ? result
-        : { ...result, session: null, requiresEmailConfirmation: true };
-
-    if (responsePayload.session) {
-      setAuthCookies(res, responsePayload.session);
+    const shouldIssueSession = result.user.emailConfirmed && Boolean(result.session);
+    if (shouldIssueSession && result.session) {
+      setAuthCookies(res, result.session);
     }
+
+    const responsePayload: PublicAuthResponse = {
+      user: result.user,
+      session: null,
+      requiresEmailConfirmation: !shouldIssueSession,
+    };
+
     return res.status(201).json(responsePayload);
   } catch (error) {
     return handleControllerError(error, next);
@@ -92,11 +106,19 @@ export const login = async (
         .json({ error: "Email confirmation required before login" });
     }
 
-    if (result.session) {
-      setAuthCookies(res, result.session);
+    if (!result.session) {
+      clearAuthCookies(res);
+      return res.status(401).json({ error: "Authentication session was not issued" });
     }
+    setAuthCookies(res, result.session);
 
-    return res.status(200).json(result);
+    const responsePayload: PublicAuthResponse = {
+      user: result.user,
+      session: null,
+      requiresEmailConfirmation: false,
+    };
+
+    return res.status(200).json(responsePayload);
   } catch (error) {
     return handleControllerError(error, next);
   }
@@ -108,13 +130,11 @@ export const refreshToken = async (
   next: NextFunction
 ) => {
   try {
-    const parsed = refreshTokenSchema.safeParse(req.body || {});
-    const refreshToken = parsed.success
-      ? parsed.data.refreshToken
-      : getRefreshTokenFromCookies(req);
+    const refreshToken = getRefreshTokenFromCookies(req);
 
     if (!refreshToken) {
-      return res.status(400).json({ error: "refreshToken is required" });
+      clearAuthCookies(res);
+      return res.status(401).json({ error: "Refresh token cookie is missing" });
     }
 
     const payload = refreshTokenSchema.parse({ refreshToken });
@@ -126,11 +146,19 @@ export const refreshToken = async (
         .json({ error: "Email confirmation required before session refresh" });
     }
 
-    if (result.session) {
-      setAuthCookies(res, result.session);
+    if (!result.session) {
+      clearAuthCookies(res);
+      return res.status(401).json({ error: "Session refresh failed" });
     }
+    setAuthCookies(res, result.session);
 
-    return res.status(200).json(result);
+    const responsePayload: PublicAuthResponse = {
+      user: result.user,
+      session: null,
+      requiresEmailConfirmation: false,
+    };
+
+    return res.status(200).json(responsePayload);
   } catch (error) {
     return handleControllerError(error, next);
   }

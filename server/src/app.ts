@@ -13,10 +13,34 @@ import feedbackRoutes from "./modules/feedback/feedback.routes";
 import userRoutes from "./modules/users/users.routes";
 
 const app = express();
+const expectedClientOrigin = (() => {
+  try {
+    return new URL(env.CLIENT_URL).origin;
+  } catch {
+    return env.CLIENT_URL;
+  }
+})();
 
 // ── Core Middleware ──────────────────────────────────────────
 app.use(helmet());
-app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      try {
+        const normalizedOrigin = new URL(origin).origin;
+        callback(null, normalizedOrigin === expectedClientOrigin);
+      } catch {
+        callback(null, false);
+      }
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(requestLogger);
 

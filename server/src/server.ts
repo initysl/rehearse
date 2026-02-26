@@ -12,6 +12,14 @@ import { handleVoiceSession } from "./voice/websocket.handler";
 
 const server = http.createServer(app);
 
+const expectedClientOrigin = (() => {
+  try {
+    return new URL(env.CLIENT_URL).origin;
+  } catch {
+    return env.CLIENT_URL;
+  }
+})();
+
 const parseJwtPayload = (token: string): Record<string, unknown> | null => {
   const segments = token.split(".");
   if (segments.length < 2) return null;
@@ -47,14 +55,36 @@ const validateVoiceToken = async (token: string) => {
   return user;
 };
 
+const isAllowedWebSocketOrigin = (originHeader: string | undefined): boolean => {
+  if (!originHeader) {
+    return env.NODE_ENV !== "production";
+  }
+
+  try {
+    return new URL(originHeader).origin === expectedClientOrigin;
+  } catch {
+    return false;
+  }
+};
+
 // ── WebSocket Server (Voice) ──────────────────────────────────
 const wss = new WebSocketServer({ server, path: "/ws/voice" });
 
 wss.on("connection", async (ws, req) => {
   try {
+    const originHeader =
+      typeof req.headers.origin === "string" ? req.headers.origin : undefined;
+    if (!isAllowedWebSocketOrigin(originHeader)) {
+      logWarn("voice.ws.reject.invalid_origin", {
+        origin: originHeader || null,
+        expectedOrigin: expectedClientOrigin,
+      });
+      ws.close(1008, "Invalid websocket origin");
+      return;
+    }
+
     const url = new URL(req.url || "/ws/voice", env.SERVER_URL);
     const sessionId = url.searchParams.get("sessionId");
-    const tokenFromQuery = url.searchParams.get("token");
     const tokenFromCookie = getAccessTokenFromCookieHeader(req.headers.cookie);
     const token = tokenFromCookie;
 
@@ -62,7 +92,6 @@ wss.on("connection", async (ws, req) => {
       logWarn("voice.ws.reject.missing_params", {
         sessionId: sessionId || null,
         hasCookieToken: Boolean(tokenFromCookie),
-        hasQueryToken: Boolean(tokenFromQuery),
       });
       ws.close(1008, "Missing sessionId or auth cookie");
       return;

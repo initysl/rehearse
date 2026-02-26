@@ -16,17 +16,9 @@ export interface AuthUser {
   emailConfirmed: boolean;
 }
 
-export interface AuthSession {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-  expiresAt: number;
-  tokenType: string;
-}
-
 export interface AuthResponse {
   user: AuthUser;
-  session: AuthSession | null;
+  session: null;
   requiresEmailConfirmation: boolean;
 }
 

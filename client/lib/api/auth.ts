@@ -12,10 +12,6 @@ export interface LoginInput {
   password: string;
 }
 
-export interface RefreshTokenInput {
-  refreshToken?: string;
-}
-
 export const registerWithEmail = (payload: RegisterInput) => {
   return apiRequest<AuthResponse>("/auth/register", {
     method: "POST",
@@ -30,10 +26,9 @@ export const loginWithEmail = (payload: LoginInput) => {
   });
 };
 
-export const refreshSession = (payload: RefreshTokenInput = {}) => {
+export const refreshSession = () => {
   return apiRequest<AuthResponse>("/auth/refresh-token", {
     method: "POST",
-    body: payload,
   });
 };
 

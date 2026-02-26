@@ -4,6 +4,7 @@ import {
   supabaseConfig,
   SupabaseRequestError,
 } from '../config/supabase';
+import { env } from '../config/env';
 import { getAccessTokenFromCookies } from '../modules/auth/auth.utils';
 import { JwtPayload } from '../types/global.types';
 
@@ -29,7 +30,13 @@ export const authenticate = async (
     ? authHeader.split(' ')[1]
     : null;
   const cookieToken = getAccessTokenFromCookies(req);
-  const token = bearerToken || cookieToken;
+  const allowBearerToken = env.NODE_ENV === 'test';
+
+  if (cookieToken && bearerToken && cookieToken !== bearerToken) {
+    return res.status(401).json({ error: 'Unauthorized — token mismatch' });
+  }
+
+  const token = cookieToken || (allowBearerToken ? bearerToken : null);
 
   if (!token) {
     return res.status(401).json({ error: 'Unauthorized — no token provided' });

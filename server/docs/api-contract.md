@@ -6,11 +6,12 @@ Base URL (local): `http://localhost:5000`
 
 - `POST /auth/register`
   - Body: `{ "email": string, "password": string, "fullName"?: string }`
-  - Notes: Requires email confirmation before protected usage.
+  - Notes: Requires email confirmation before protected usage. Auth tokens are set in secure HttpOnly cookies; token strings are not returned in response body.
 - `POST /auth/login`
   - Body: `{ "email": string, "password": string }`
 - `POST /auth/refresh-token`
-  - Body: `{ "refreshToken"?: string }` (cookie fallback supported)
+  - Body: none
+  - Notes: Refresh token is read from secure HttpOnly cookie only.
 - `GET /auth/oauth/google`
   - Starts backend-owned OAuth redirect flow.
 - `GET /auth/oauth/google/callback`
