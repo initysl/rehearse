@@ -65,15 +65,6 @@ const defaultKokoroVoiceForGender = (gender: VoiceGender): string => {
   return env.KOKORO_TTS_VOICE_FEMALE;
 };
 
-const kokoroVoiceOverrides: Record<VoiceId, string> = {
-  autumn: env.KOKORO_TTS_VOICE_AUTUMN,
-  diana: env.KOKORO_TTS_VOICE_DIANA,
-  hannah: env.KOKORO_TTS_VOICE_HANNAH,
-  austin: env.KOKORO_TTS_VOICE_AUSTIN,
-  daniel: env.KOKORO_TTS_VOICE_DANIEL,
-  troy: env.KOKORO_TTS_VOICE_TROY,
-};
-
 interface SessionScenarioVoiceRow {
   character_profile: {
     gender?: unknown;
@@ -213,11 +204,8 @@ const groqVoiceForSelection = (selection: TtsVoiceSelection): string => {
 };
 
 const kokoroVoiceForSelection = (selection: TtsVoiceSelection): string => {
-  if (selection.voiceId) {
-    const configured = kokoroVoiceOverrides[selection.voiceId]?.trim();
-    if (configured) return configured;
-  }
-
+  // Kokoro uses its own voice IDs. App-level voiceId (autumn/diana/...) is Groq Orpheus-specific.
+  // For Kokoro, only gender determines default voice.
   return defaultKokoroVoiceForGender(selection.gender);
 };
 

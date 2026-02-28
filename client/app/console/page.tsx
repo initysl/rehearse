@@ -34,6 +34,7 @@ import {
 import {
   useDeleteSessionMutation,
   useEndSessionMutation,
+  useSendMessageStreamMutation,
   useSessionDetailQuery,
   useSessionHistoryQuery,
   useStartSessionMutation,
@@ -69,6 +70,11 @@ export default function ConsolePage() {
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(
     null,
   );
+  const [pendingTextUser, setPendingTextUser] = useState('');
+  const [textStreamingAssistant, setTextStreamingAssistant] = useState('');
+  const [textChatErrorMessage, setTextChatErrorMessage] = useState<
+    string | null
+  >(null);
 
   const meQuery = useMeQuery(accessToken);
   const isAuthResolved = !meQuery.isLoading && !meQuery.isFetching;
@@ -102,6 +108,7 @@ export default function ConsolePage() {
   const updateScenarioMutation = useUpdateScenarioMutation(accessToken);
   const deleteScenarioMutation = useDeleteScenarioMutation(accessToken);
   const deleteSessionMutation = useDeleteSessionMutation(accessToken);
+  const sendMessageStreamMutation = useSendMessageStreamMutation(accessToken);
 
   const scenarioOptions = scenariosQuery.data?.scenarios || [];
   const historyItems = historyQuery.data?.sessions || [];
@@ -205,6 +212,12 @@ export default function ConsolePage() {
       voiceSession.stopRecording();
     }
   }, [activeSessionId, voiceSession.isRecording, voiceSession.stopRecording]);
+
+  useEffect(() => {
+    setPendingTextUser('');
+    setTextStreamingAssistant('');
+    setTextChatErrorMessage(null);
+  }, [activeSessionId]);
 
   const handleLogout = async () => {
     try {
@@ -316,6 +329,52 @@ export default function ConsolePage() {
     }
   };
 
+  const handleSendTextMessage = async (content: string): Promise<void> => {
+    if (!activeSessionId) {
+      setTextChatErrorMessage('Start a session before sending text messages.');
+      return;
+    }
+
+    if (currentSessionStatus !== 'active') {
+      setTextChatErrorMessage('This session is no longer active.');
+      return;
+    }
+
+    setTextChatErrorMessage(null);
+    setPendingTextUser(content);
+    setTextStreamingAssistant('');
+
+    try {
+      await sendMessageStreamMutation.mutateAsync({
+        sessionId: activeSessionId,
+        content,
+        onToken: (token) => {
+          setTextStreamingAssistant((prev) => `${prev}${token}`);
+        },
+        onDone: () => {
+          void detailQuery.refetch();
+          void historyQuery.refetch();
+        },
+        onError: (error) => {
+          setTextChatErrorMessage(
+            mapApiErrorToUserMessage(error, 'Could not stream response.'),
+          );
+        },
+      });
+
+      setPendingTextUser('');
+      setTextStreamingAssistant('');
+      void detailQuery.refetch();
+      void historyQuery.refetch();
+    } catch (error) {
+      setPendingTextUser('');
+      setTextStreamingAssistant('');
+      setTextChatErrorMessage(
+        mapApiErrorToUserMessage(error, 'Could not send message.'),
+      );
+    }
+  };
+
   const scenarioErrorMessage = scenariosQuery.error
     ? `Scenario fetch error: ${formatError(scenariosQuery.error)}`
     : undefined;
@@ -386,9 +445,14 @@ export default function ConsolePage() {
       voiceTranscript={voiceSession.lastTranscript}
       voiceAssistantText={voiceSession.lastAssistantText}
       voiceErrorMessage={voiceSession.lastError || undefined}
+      textErrorMessage={textChatErrorMessage || undefined}
+      pendingTextUser={pendingTextUser}
+      textStreamingAssistant={textStreamingAssistant}
+      isSendingText={sendMessageStreamMutation.isPending}
       aiCharacterName={selectedScenario?.characterProfile.name}
       onToggleRecording={voiceSession.toggleRecording}
       onToggleAudioPlayback={voiceSession.toggleAudioPlayback}
+      onSendTextMessage={handleSendTextMessage}
     />
   );
 

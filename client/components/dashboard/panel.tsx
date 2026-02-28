@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 type PanelProps = {
-  title: string;
+  title?: string;
   description?: string;
   rightSlot?: ReactNode;
   children: ReactNode;
@@ -21,9 +21,13 @@ export function Panel({
     >
       <div className='mb-4 flex flex-wrap items-start justify-between gap-3'>
         <div>
-          <h2 className='text-base font-semibold text-white sm:text-lg'>{title}</h2>
+          <h2 className='text-base font-semibold text-white sm:text-lg'>
+            {title}
+          </h2>
           {description ? (
-            <p className='mt-1 text-xs text-white/55 sm:text-sm'>{description}</p>
+            <p className='mt-1 text-xs text-white/55 sm:text-sm'>
+              {description}
+            </p>
           ) : null}
         </div>
         {rightSlot ? <div>{rightSlot}</div> : null}
