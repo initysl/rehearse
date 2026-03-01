@@ -15,20 +15,20 @@ const socialLinks = [
 export function LandingFooter() {
   return (
     <footer className='border-t border-white/5 px-6 py-8'>
-      <div className='mx-auto flex flex-wrap items-center justify-between gap-5 text-white'>
-        <div className='flex flex-wrap gap-6'>
+      <div className='mx-auto grid max-w-7xl grid-cols-1 items-center gap-4 text-white md:grid-cols-[1fr_auto_1fr]'>
+        <div className='flex flex-wrap justify-center gap-6 md:justify-start'>
           {legalLinks.map((item) => (
             <Link
               key={item.label}
               href={item.href}
-              className='text-[12px] font-medium uppercase tracking-wider no-underline transition hover:text-white/55'
+              className='text-[12px] font-medium tracking-wider no-underline transition hover:text-white/55'
             >
               {item.label}
             </Link>
           ))}
         </div>
 
-        <div className='flex gap-2.5'>
+        <div className='flex justify-center gap-2.5'>
           {socialLinks.map((social) => (
             <a
               key={social.label}
@@ -43,8 +43,8 @@ export function LandingFooter() {
           ))}
         </div>
 
-        <p className='w-full text-center text-[12px] font-medium uppercase md:w-auto'>
-          Copyright {new Date().getFullYear()} Rehearse. All rights reserved.
+        <p className='text-center text-[12px] font-medium md:text-right'>
+          &copy; {new Date().getFullYear()} Rehearse. All rights reserved.
         </p>
       </div>
     </footer>

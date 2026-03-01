@@ -52,7 +52,7 @@ const features: FeatureCard[] = [
 
 export function FeaturesSection() {
   return (
-    <section className='px-6 py-16'>
+    <section id='features' className='scroll-mt-20 px-6 py-16'>
       <div className='mx-auto max-w-7xl'>
         <Reveal>
           <p className='mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/30'>

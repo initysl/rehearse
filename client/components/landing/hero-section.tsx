@@ -17,7 +17,7 @@ import { ScoreRing } from '@/components/landing/score-ring';
 
 export function HeroSection() {
   return (
-    <section className='relative px-6 pb-10 pt-28'>
+    <section id='home' className='relative scroll-mt-20 px-6 pb-10 pt-28'>
       <div className='mx-auto max-w-7xl'>
         <div className='mb-12 grid items-center gap-10 lg:grid-cols-[1fr_auto]'>
           <div>
@@ -92,14 +92,6 @@ export function HeroSection() {
               >
                 Start practicing
                 <FiArrowRight size={14} />
-              </motion.a>
-              <motion.a
-                href='/auth'
-                whileHover={{ scale: 1.02 }}
-                className='inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/4 px-6 py-3.5 text-[13px] font-medium text-white no-underline transition hover:bg-white/[0.07]'
-              >
-                <FiLogIn size={12} />
-                Sign in
               </motion.a>
             </motion.div>
 

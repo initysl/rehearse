@@ -3,7 +3,11 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-const navItems = ['Home', 'Features', 'How to use'];
+const navItems = [
+  { label: 'Home', href: '/#home' },
+  { label: 'Features', href: '/#features' },
+  { label: 'How to use', href: '/#how-to-use' },
+];
 
 export function LandingNavbar() {
   return (
@@ -31,26 +35,20 @@ export function LandingNavbar() {
         <div className='hidden items-center gap-0.5 rounded-full border border-white/8 bg-white/3 px-1 py-1 md:flex'>
           {navItems.map((item, i) => (
             <Link
-              key={item}
-              href='#'
+              key={item.label}
+              href={item.href}
               className={`rounded-full px-3.5 py-1.5 text-[12px] font-medium no-underline transition-all ${
                 i === 0
                   ? 'bg-white text-[#0f0e06] shadow-sm'
                   : 'text-white/40 hover:text-white/70'
               }`}
             >
-              {item}
+              {item.label}
             </Link>
           ))}
         </div>
 
         <div className='flex items-center gap-3'>
-          <Link
-            href='/auth'
-            className='text-[13px] font-medium text-white/50 no-underline transition hover:text-white'
-          >
-            Sign in
-          </Link>
           <motion.a
             href='/auth'
             whileHover={{ scale: 1.03 }}
@@ -58,7 +56,7 @@ export function LandingNavbar() {
             className='rounded-full px-4 py-2 text-[13px] font-semibold text-white no-underline shadow-lg shadow-amber-900/30'
             style={{ background: 'linear-gradient(90deg, #f59e0b, #ea580c)' }}
           >
-            Get started
+            Sign in
           </motion.a>
         </div>
       </div>

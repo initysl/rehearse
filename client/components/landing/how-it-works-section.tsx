@@ -35,7 +35,7 @@ const steps: Step[] = [
 
 export function HowItWorksSection() {
   return (
-    <section className='px-6 py-16'>
+    <section id='how-to-use' className='scroll-mt-20 px-6 py-16'>
       <div className='mx-auto max-w-7xl'>
         <div className='grid items-center gap-12 lg:grid-cols-2'>
           <div>
