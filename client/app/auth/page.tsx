@@ -3,10 +3,19 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { FaGoogle } from 'react-icons/fa';
-import { FiAlertCircle, FiArrowRight, FiCheckCircle, FiLoader } from 'react-icons/fi';
+import { FaArrowLeft, FaBackward, FaGoogle } from 'react-icons/fa';
+import {
+  FiAlertCircle,
+  FiArrowRight,
+  FiCheckCircle,
+  FiLoader,
+} from 'react-icons/fi';
 import { useAccessToken } from '@/lib/hooks/use-access-token';
-import { beginGoogleOAuth, useLogoutMutation, useMeQuery } from '@/lib/hooks/use-auth';
+import {
+  beginGoogleOAuth,
+  useLogoutMutation,
+  useMeQuery,
+} from '@/lib/hooks/use-auth';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -23,7 +32,9 @@ export default function AuthPage() {
       beginGoogleOAuth('/console');
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Google sign-in is unavailable right now.';
+        error instanceof Error
+          ? error.message
+          : 'Google sign-in is unavailable right now.';
       setGoogleError(message);
     }
   };
@@ -100,24 +111,15 @@ export default function AuthPage() {
           <div className='mb-6 flex items-center justify-between'>
             <Link
               href='/'
-              className='text-xs uppercase tracking-[0.12em] text-white/40 no-underline transition hover:text-white/70'
+              className='inline-flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-white/40 no-underline transition hover:text-white/70'
             >
-              ← Home
+              <FaArrowLeft />
+              Home
             </Link>
             <p className='text-xs uppercase tracking-[0.12em] text-amber-300/70'>
               Rehearse
             </p>
           </div>
-
-          <h1
-            className='mb-2 text-3xl text-white'
-            style={{ fontFamily: 'Syne', fontWeight: 700 }}
-          >
-            Continue with Google
-          </h1>
-          <p className='mb-6 text-sm text-white/45'>
-            Secure sign-in only. We use Google OAuth and httpOnly session cookies.
-          </p>
 
           <button
             onClick={handleGoogle}
@@ -127,11 +129,6 @@ export default function AuthPage() {
             <FaGoogle />
             Continue with Google
           </button>
-
-          <p className='mt-4 inline-flex items-start gap-2 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-200'>
-            <FiCheckCircle className='mt-0.5 shrink-0' aria-hidden='true' />
-            Password login is disabled for this project.
-          </p>
 
           {googleError ? (
             <p
