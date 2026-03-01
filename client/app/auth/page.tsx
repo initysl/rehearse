@@ -124,7 +124,7 @@ export default function AuthPage() {
           <button
             onClick={handleGoogle}
             type='button'
-            className='inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/12 bg-white/3 px-6 py-3 text-sm font-medium text-white/80 transition hover:bg-white/6 hover:text-white'
+            className='cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/12 bg-white/3 px-6 py-3 text-sm font-medium text-white/80 transition hover:bg-white/6 hover:text-white'
           >
             <FaGoogle />
             Continue with Google

@@ -135,7 +135,6 @@ export const supabaseAuthApi = {
 
   buildGoogleOAuthPkceUrl: (input: {
     redirectTo?: string;
-    state: string;
     codeChallenge: string;
   }): string => {
     const params = new URLSearchParams({
@@ -143,7 +142,6 @@ export const supabaseAuthApi = {
       redirect_to: input.redirectTo || supabaseConfig.googleOauthRedirectUrl,
       code_challenge: input.codeChallenge,
       code_challenge_method: "S256",
-      state: input.state,
     });
 
     return `${supabaseConfig.authBaseUrl}/authorize?${params.toString()}`;

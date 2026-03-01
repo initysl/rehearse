@@ -109,16 +109,15 @@ export const googleOAuth = async (
 ) => {
   try {
     const query = googleOAuthStartQuerySchema.parse(req.query);
-    const { codeVerifier, codeChallenge, state } = createPkceChallenge();
+    const { codeVerifier, codeChallenge } = createPkceChallenge();
 
     setGoogleOauthStateCookie(res, {
-      state,
       codeVerifier,
       next: query.next,
       issuedAt: Date.now(),
     });
 
-    const result = await getGoogleOAuthUrl({ ...query, state, codeChallenge });
+    const result = await getGoogleOAuthUrl({ ...query, codeChallenge });
     return res.redirect(302, result.url);
   } catch (error) {
     return handleControllerError(error, next);
@@ -140,12 +139,7 @@ export const googleOAuthCallback = async (
       return res.redirect(302, buildErrorRedirect());
     }
 
-    if (!query.code || !query.state || !stateCookie) {
-      clearAuthCookies(res);
-      return res.redirect(302, buildErrorRedirect());
-    }
-
-    if (stateCookie.state !== query.state) {
+    if (!query.code || !stateCookie) {
       clearAuthCookies(res);
       return res.redirect(302, buildErrorRedirect());
     }

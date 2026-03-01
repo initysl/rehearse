@@ -7,7 +7,6 @@ const REFRESH_TOKEN_COOKIE = "rh_refresh_token";
 const GOOGLE_OAUTH_COOKIE = "rh_google_oauth";
 
 interface GoogleOauthStatePayload {
-  state: string;
   codeVerifier: string;
   next?: string;
   issuedAt: number;
@@ -133,16 +132,14 @@ export const clearAuthCookies = (res: Response) => {
 export const createPkceChallenge = (): {
   codeVerifier: string;
   codeChallenge: string;
-  state: string;
 } => {
   const codeVerifier = crypto.randomBytes(64).toString("base64url");
   const codeChallenge = crypto
     .createHash("sha256")
     .update(codeVerifier)
     .digest("base64url");
-  const state = crypto.randomBytes(24).toString("base64url");
 
-  return { codeVerifier, codeChallenge, state };
+  return { codeVerifier, codeChallenge };
 };
 
 export const setGoogleOauthStateCookie = (

@@ -61,14 +61,12 @@ export const refreshAuthSession = async (
 };
 
 export const getGoogleOAuthUrl = async (
-  query: GoogleOAuthStartQuery & { state: string; codeChallenge: string }
-): Promise<{ url: string; state: string }> => {
+  query: GoogleOAuthStartQuery & { codeChallenge: string }
+): Promise<{ url: string }> => {
   return {
     url: supabaseAuthApi.buildGoogleOAuthPkceUrl({
-      state: query.state,
       codeChallenge: query.codeChallenge,
     }),
-    state: query.state,
   };
 };
 
