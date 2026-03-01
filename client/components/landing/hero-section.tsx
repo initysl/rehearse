@@ -82,7 +82,7 @@ export function HeroSection() {
               className='mb-7 flex flex-wrap items-center gap-3'
             >
               <motion.a
-                href='/auth?mode=signup'
+                href='/auth'
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 className='inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[13px] font-semibold text-[#0f0e06] no-underline shadow-xl shadow-amber-900/30'

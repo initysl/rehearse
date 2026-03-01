@@ -52,13 +52,13 @@ export function LandingNavbar() {
             Sign in
           </Link>
           <motion.a
-            href='/auth?mode=signup'
+            href='/auth'
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             className='rounded-full px-4 py-2 text-[13px] font-semibold text-white no-underline shadow-lg shadow-amber-900/30'
             style={{ background: 'linear-gradient(90deg, #f59e0b, #ea580c)' }}
           >
-            Sign up
+            Get started
           </motion.a>
         </div>
       </div>

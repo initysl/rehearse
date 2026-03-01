@@ -31,7 +31,7 @@ export function CtaSection() {
               Run your first rehearsal now.
             </h2>
             <p className='relative mx-auto mb-8 max-w-md text-[15px] text-white/40'>
-              Log in with email or Google. Pick or customize a conversation.
+              Sign in with Google. Pick or customize a conversation.
               Start practicing — no setup, no friction.
             </p>
             {/* <div className='relative flex flex-wrap items-center justify-center gap-4'>

@@ -1,13 +1,10 @@
 import {
   supabaseAuthApi,
-  SupabaseRequestError,
   SupabaseSession,
 } from "../../config/supabase";
 import {
   GoogleOAuthStartQuery,
-  LoginInput,
   RefreshTokenInput,
-  RegisterInput,
 } from "./auth.types";
 
 type AuthResponse = {
@@ -55,33 +52,6 @@ const toAuthResponse = (
     : null,
   requiresEmailConfirmation: !session,
 });
-
-export const registerWithEmailPassword = async (
-  payload: RegisterInput
-): Promise<AuthResponse> => {
-  const fullName = payload.fullName?.trim();
-  const { user, session } = await supabaseAuthApi.signUp({
-    email: payload.email,
-    password: payload.password,
-    fullName: fullName || undefined,
-  });
-
-  if (!user && !session) {
-    throw new SupabaseRequestError(
-      "Sign up failed. No user or session returned.",
-      400
-    );
-  }
-
-  return toAuthResponse(user, session);
-};
-
-export const loginWithEmailPassword = async (
-  payload: LoginInput
-): Promise<AuthResponse> => {
-  const session = await supabaseAuthApi.signInWithPassword(payload);
-  return toAuthResponse(session.user, session);
-};
 
 export const refreshAuthSession = async (
   payload: RefreshTokenInput

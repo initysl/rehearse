@@ -5,12 +5,8 @@ import { ApiError } from "../api/client";
 import {
   getGoogleOAuthStartUrl,
   getMe,
-  loginWithEmail,
   logoutSession,
   refreshSession,
-  registerWithEmail,
-  type LoginInput,
-  type RegisterInput,
 } from "../api/auth";
 import { queryKeys } from "../query/keys";
 
@@ -28,36 +24,6 @@ export const useMeQuery = (accessToken: string | null) => {
 
         throw error;
       }
-    },
-  });
-};
-
-export const useLoginMutation = (
-  setAccessToken: (token: string | null) => void
-) => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (payload: LoginInput) => loginWithEmail(payload),
-    onSuccess: (result) => {
-      void result;
-      setAccessToken(null);
-      void queryClient.invalidateQueries({ queryKey: ["auth"] });
-    },
-  });
-};
-
-export const useRegisterMutation = (
-  setAccessToken: (token: string | null) => void
-) => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (payload: RegisterInput) => registerWithEmail(payload),
-    onSuccess: (result) => {
-      void result;
-      setAccessToken(null);
-      void queryClient.invalidateQueries({ queryKey: ["auth"] });
     },
   });
 };

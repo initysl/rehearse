@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SessionMessage } from '@/lib/api/types';
 import { motion } from 'framer-motion';
 import { FiArrowUp, FiMic, FiMicOff, FiPause, FiPlay } from 'react-icons/fi';
-import { Panel } from '../panel';
 
 type ConversationViewProps = {
   activeSessionId: string | null;

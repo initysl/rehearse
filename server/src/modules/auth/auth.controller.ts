@@ -4,17 +4,13 @@ import { SupabaseRequestError } from "../../config/supabase";
 import {
   exchangeGoogleOAuthCode,
   getGoogleOAuthUrl,
-  loginWithEmailPassword,
   logoutSession,
   refreshAuthSession,
-  registerWithEmailPassword,
 } from "./auth.service";
 import {
   googleOAuthCallbackQuerySchema,
   googleOAuthStartQuerySchema,
-  loginSchema,
   refreshTokenSchema,
-  registerSchema,
 } from "./auth.types";
 import { findProfileByUserId } from "../users/users.service";
 import {
@@ -64,64 +60,6 @@ const handleControllerError = (
   }
 
   return next(error as Error);
-};
-
-export const register = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const payload = registerSchema.parse(req.body);
-    const result = await registerWithEmailPassword(payload);
-    const shouldIssueSession = result.user.emailConfirmed && Boolean(result.session);
-    if (shouldIssueSession && result.session) {
-      setAuthCookies(res, result.session);
-    }
-
-    const responsePayload: PublicAuthResponse = {
-      user: result.user,
-      session: null,
-      requiresEmailConfirmation: !shouldIssueSession,
-    };
-
-    return res.status(201).json(responsePayload);
-  } catch (error) {
-    return handleControllerError(error, next);
-  }
-};
-
-export const login = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const payload = loginSchema.parse(req.body);
-    const result = await loginWithEmailPassword(payload);
-    if (!result.user.emailConfirmed) {
-      clearAuthCookies(res);
-      return res
-        .status(403)
-        .json({ error: "Email confirmation required before login" });
-    }
-
-    if (!result.session) {
-      clearAuthCookies(res);
-      return res.status(401).json({ error: "Authentication session was not issued" });
-    }
-    setAuthCookies(res, result.session);
-
-    const responsePayload: PublicAuthResponse = {
-      user: result.user,
-      session: null,
-      requiresEmailConfirmation: false,
-    };
-
-    return res.status(200).json(responsePayload);
-  } catch (error) {
-    return handleControllerError(error, next);
-  }
 };
 
 export const refreshToken = async (

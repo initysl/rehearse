@@ -186,7 +186,7 @@ export default function ConsolePage() {
 
   useEffect(() => {
     if (isAuthResolved && !isAuthenticated) {
-      router.replace('/auth?mode=signin');
+      router.replace('/auth');
     }
   }, [isAuthResolved, isAuthenticated, router]);
 
@@ -223,7 +223,7 @@ export default function ConsolePage() {
     try {
       await logoutMutation.mutateAsync();
     } finally {
-      router.replace('/auth?mode=signin');
+      router.replace('/auth');
     }
   };
 
