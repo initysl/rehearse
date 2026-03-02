@@ -10,6 +10,8 @@ export const queryKeys = {
   },
   sessions: {
     history: (query: SessionHistoryQuery) => ["sessions", "history", query] as const,
+    historyInfinite: (query: { status?: SessionHistoryQuery["status"]; pageSize: number }) =>
+      ["sessions", "history", "infinite", query] as const,
     detail: (sessionId: string) => ["sessions", "detail", sessionId] as const,
   },
   feedback: {

@@ -19,7 +19,18 @@ export const useMeQuery = (accessToken: string | null) => {
         return await getMe();
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
-          return null;
+          try {
+            await refreshSession();
+            return await getMe();
+          } catch (refreshError) {
+            if (
+              refreshError instanceof ApiError &&
+              (refreshError.status === 401 || refreshError.status === 403)
+            ) {
+              return null;
+            }
+            throw refreshError;
+          }
         }
 
         throw error;

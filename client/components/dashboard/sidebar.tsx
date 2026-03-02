@@ -23,9 +23,6 @@ export function DashboardSidebar({
   onLogout,
   onNavigate,
   userSummary,
-  scenarioCount,
-  completedSessions,
-  activeSession,
   mobile = false,
   className,
 }: DashboardSidebarProps) {
@@ -101,16 +98,7 @@ export function DashboardSidebar({
             ? 'opacity-100'
             : 'max-h-0 overflow-hidden p-0 opacity-0 group-hover/sidebar:max-h-40 group-hover/sidebar:p-3 group-hover/sidebar:opacity-100'
         }`}
-      >
-        <p className='text-[10px] uppercase tracking-[0.12em] text-white/45'>
-          Quick Stats
-        </p>
-        <p className='mt-2 text-xs text-white/80'>Scenarios: {scenarioCount}</p>
-        <p className='text-xs text-white/80'>Completed: {completedSessions}</p>
-        <p className='text-xs text-white/80'>
-          Status: {activeSession ? 'Live' : 'Idle'}
-        </p>
-      </div>
+      ></div>
 
       <div className='mt-3 space-y-2'>
         <button
@@ -120,7 +108,7 @@ export function DashboardSidebar({
         >
           <FiLogOut size={14} className='shrink-0' />
           <span
-            className={`ml-2 whitespace-nowrap text-xs font-semibold uppercase tracking-[0.08em] transition ${
+            className={`ml-2 whitespace-nowrap text-xs font-semibold tracking-[0.08em] transition ${
               expanded
                 ? 'opacity-100'
                 : 'max-w-0 opacity-0 group-hover/sidebar:max-w-35 group-hover/sidebar:opacity-100'

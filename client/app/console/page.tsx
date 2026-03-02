@@ -11,6 +11,7 @@ import {
 import type {
   CreateCustomScenarioInput,
   DifficultyLevel,
+  SessionHistoryItem,
 } from '@/lib/api/types';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import type {
@@ -32,11 +33,12 @@ import {
   useUpdateScenarioMutation,
 } from '@/lib/hooks/use-scenarios';
 import {
+  useClearSessionHistoryMutation,
   useDeleteSessionMutation,
   useEndSessionMutation,
   useSendMessageStreamMutation,
   useSessionDetailQuery,
-  useSessionHistoryQuery,
+  useSessionHistoryInfiniteQuery,
   useStartSessionMutation,
 } from '@/lib/hooks/use-sessions';
 import { useVoiceSession } from '@/lib/hooks/use-voice-session';
@@ -85,9 +87,9 @@ export default function ConsolePage() {
     { limit: 100, offset: 0 },
     isAuthenticated,
   );
-  const historyQuery = useSessionHistoryQuery(
+  const historyQuery = useSessionHistoryInfiniteQuery(
     accessToken,
-    { limit: 12, offset: 0 },
+    { pageSize: 20 },
     isAuthenticated,
   );
   const detailQuery = useSessionDetailQuery(
@@ -108,10 +110,25 @@ export default function ConsolePage() {
   const updateScenarioMutation = useUpdateScenarioMutation(accessToken);
   const deleteScenarioMutation = useDeleteScenarioMutation(accessToken);
   const deleteSessionMutation = useDeleteSessionMutation(accessToken);
+  const clearHistoryMutation = useClearSessionHistoryMutation(accessToken);
   const sendMessageStreamMutation = useSendMessageStreamMutation(accessToken);
 
   const scenarioOptions = scenariosQuery.data?.scenarios || [];
-  const historyItems = historyQuery.data?.sessions || [];
+  const historyItems = useMemo(() => {
+    const pages = historyQuery.data?.pages || [];
+    const seen = new Set<string>();
+    const merged: SessionHistoryItem[] = [];
+
+    for (const page of pages) {
+      for (const session of page.sessions) {
+        if (seen.has(session.id)) continue;
+        seen.add(session.id);
+        merged.push(session);
+      }
+    }
+
+    return merged;
+  }, [historyQuery.data]);
   const messages = detailQuery.data?.messages || [];
   const selectedScenario =
     scenarioOptions.find((scenario) => scenario.id === selectedScenarioId) ||
@@ -306,11 +323,21 @@ export default function ConsolePage() {
     void scenariosQuery.refetch();
   };
 
-  const handleDeleteHistorySession = async (sessionId: string): Promise<void> => {
-    if (deleteSessionMutation.isPending) return;
+  const handleDeleteHistorySession = async (
+    sessionId: string,
+    status: 'active' | 'completed' | 'abandoned',
+  ): Promise<void> => {
+    if (deleteSessionMutation.isPending || endSessionMutation.isPending) return;
     setDeletingSessionId(sessionId);
     setLastActionMessage('');
     try {
+      if (status === 'active') {
+        await endSessionMutation.mutateAsync({
+          sessionId,
+          payload: { status: 'abandoned' },
+        });
+      }
+
       await deleteSessionMutation.mutateAsync(sessionId);
       if (activeSessionId === sessionId) {
         setActiveSessionId(null);
@@ -326,6 +353,32 @@ export default function ConsolePage() {
       );
     } finally {
       setDeletingSessionId(null);
+    }
+  };
+
+  const handleClearRecentSessions = async (): Promise<void> => {
+    if (clearHistoryMutation.isPending || !historyItems.length) return;
+    setLastActionMessage('');
+
+    try {
+      const result = await clearHistoryMutation.mutateAsync({
+        scope: 'non_active',
+        limit: historyItems.length,
+      });
+
+      if (result.deletedCount <= 0) {
+        setLastActionMessage('No non-active sessions to clear.');
+      } else {
+        setLastActionMessage(
+          `Cleared ${result.deletedCount} recent session${result.deletedCount === 1 ? '' : 's'}.`,
+        );
+      }
+
+      void historyQuery.refetch();
+    } catch (error) {
+      setLastActionMessage(
+        `Could not clear recent sessions: ${formatError(error)}`,
+      );
     }
   };
 
@@ -470,6 +523,16 @@ export default function ConsolePage() {
       totalScenarios={scenarioOptions.length}
       historyItems={historyItems}
       onDeleteSession={handleDeleteHistorySession}
+      onClearRecentSessions={handleClearRecentSessions}
+      isClearingRecentSessions={clearHistoryMutation.isPending}
+      onLoadMoreHistory={() => {
+        if (historyQuery.hasNextPage) {
+          void historyQuery.fetchNextPage();
+        }
+      }}
+      hasMoreHistory={Boolean(historyQuery.hasNextPage)}
+      isLoadingMoreHistory={historyQuery.isFetchingNextPage}
+      isHistoryLoading={historyQuery.isLoading}
       deletingSessionId={deletingSessionId}
       onSelectSession={(sessionId) => {
         setActiveSessionId(sessionId);
@@ -550,7 +613,8 @@ export default function ConsolePage() {
             </p>
             <p className='mt-1 inline-flex items-center gap-2'>
               <FiZap />
-              Session status: {activeSessionId ? 'Active' : 'Idle'}
+              Session status: {activeSessionId ? 'Active' : 'Idle'} • history
+              loaded: {historyItems.length}
             </p>
           </section>
         </div>

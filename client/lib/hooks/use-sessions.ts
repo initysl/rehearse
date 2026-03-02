@@ -1,6 +1,11 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   clearSessionHistory,
   deleteSession,
@@ -23,6 +28,36 @@ export const useSessionHistoryQuery = (
   return useQuery({
     queryKey: queryKeys.sessions.history(query),
     queryFn: () => getSessionHistory(query, accessToken),
+    enabled,
+  });
+};
+
+export const useSessionHistoryInfiniteQuery = (
+  accessToken: string | null,
+  query: { status?: SessionHistoryQuery["status"]; pageSize?: number } = {},
+  enabled = true
+) => {
+  const pageSize = Math.min(Math.max(query.pageSize ?? 20, 1), 100);
+
+  return useInfiniteQuery({
+    queryKey: queryKeys.sessions.historyInfinite({
+      status: query.status,
+      pageSize,
+    }),
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      getSessionHistory(
+        {
+          status: query.status,
+          limit: pageSize,
+          offset: Number(pageParam) || 0,
+        },
+        accessToken
+      ),
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.sessions.length < pageSize) return undefined;
+      return allPages.length * pageSize;
+    },
     enabled,
   });
 };

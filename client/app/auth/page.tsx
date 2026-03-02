@@ -53,54 +53,6 @@ export default function AuthPage() {
     );
   }
 
-  if (isAuthenticated && meQuery.data?.user) {
-    return (
-      <main
-        className='relative min-h-screen overflow-x-hidden'
-        style={{ fontFamily: "'DM Sans', sans-serif" }}
-      >
-        <div className='relative z-10 mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-14 sm:px-6'>
-          <div className='w-full max-w-xl rounded-3xl border border-white/8 bg-[#131108]/80 p-8 text-center backdrop-blur-xl'>
-            <p className='mb-3 text-xs uppercase tracking-[0.12em] text-amber-300/70'>
-              Signed in
-            </p>
-            <h1
-              className='mb-3 text-3xl text-white'
-              style={{ fontFamily: 'Syne', fontWeight: 700 }}
-            >
-              Welcome back
-            </h1>
-            <p className='mb-8 text-sm text-white/45'>
-              You are signed in as{' '}
-              <span className='text-white/70'>
-                {meQuery.data.user.email ?? meQuery.data.user.userId}
-              </span>
-              .
-            </p>
-
-            <div className='flex flex-col gap-3 sm:flex-row sm:justify-center'>
-              <button
-                onClick={() => router.push('/console')}
-                className='inline-flex items-center justify-center gap-2 rounded-full bg-linear-to-r from-amber-500 to-orange-600 px-6 py-3 text-sm font-semibold text-[#0f0e06]'
-                type='button'
-              >
-                Open Console <FiArrowRight />
-              </button>
-
-              <button
-                onClick={() => void logoutMutation.mutateAsync()}
-                className='rounded-full border border-white/12 bg-white/3 px-6 py-3 text-sm font-medium text-white/70 transition hover:text-white'
-                type='button'
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main
       className='relative min-h-screen overflow-x-hidden'

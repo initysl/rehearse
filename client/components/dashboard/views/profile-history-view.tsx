@@ -15,8 +15,17 @@ type ProfileHistoryViewProps = {
   totalScenarios: number;
   historyItems: SessionHistoryItem[];
   onSelectSession: (sessionId: string) => void;
-  onDeleteSession: (sessionId: string) => Promise<void>;
+  onDeleteSession: (
+    sessionId: string,
+    status: SessionHistoryItem['status'],
+  ) => Promise<void>;
+  onClearRecentSessions: () => Promise<void>;
+  onLoadMoreHistory: () => void;
   deletingSessionId: string | null;
+  isClearingRecentSessions: boolean;
+  hasMoreHistory: boolean;
+  isLoadingMoreHistory: boolean;
+  isHistoryLoading: boolean;
 };
 
 export function ProfileHistoryView({
@@ -26,7 +35,13 @@ export function ProfileHistoryView({
   historyItems,
   onSelectSession,
   onDeleteSession,
+  onClearRecentSessions,
+  onLoadMoreHistory,
   deletingSessionId,
+  isClearingRecentSessions,
+  hasMoreHistory,
+  isLoadingMoreHistory,
+  isHistoryLoading,
 }: ProfileHistoryViewProps) {
   return (
     <Panel
@@ -65,13 +80,29 @@ export function ProfileHistoryView({
             <FiClock size={12} />
             Recent Sessions
           </p>
-          <p className='text-[10px] uppercase tracking-[0.1em] text-white/35'>
-            Tap <FiX className='mx-1 inline-block' size={10} /> to remove one
-          </p>
+          <div className='flex items-center gap-2'>
+            <button
+              type='button'
+              onClick={() => {
+                void onClearRecentSessions();
+              }}
+              disabled={isClearingRecentSessions || historyItems.length === 0}
+              className='rounded-md border border-white/20 bg-white/5 px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] text-white/60 transition hover:border-amber-300/40 hover:text-amber-200 disabled:cursor-not-allowed disabled:opacity-50'
+            >
+              {isClearingRecentSessions ? 'Clearing...' : 'Clear recent'}
+            </button>
+            <p className='text-[10px] uppercase tracking-[0.1em] text-white/35'>
+              Tap <FiX className='mx-1 inline-block' size={10} /> to remove one
+            </p>
+          </div>
         </div>
 
-        <div className='space-y-2'>
-          {historyItems.length ? (
+        <div className='max-h-96 space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.2)_transparent] [scrollbar-width:thin]'>
+          {isHistoryLoading ? (
+            <p className='rounded-xl border border-white/15 bg-[#141414] px-3 py-2 text-sm text-white/45'>
+              Loading history...
+            </p>
+          ) : historyItems.length ? (
             historyItems.map((session) => (
               <div
                 key={session.id}
@@ -96,11 +127,9 @@ export function ProfileHistoryView({
                 <button
                   type='button'
                   onClick={() => {
-                    void onDeleteSession(session.id);
+                    void onDeleteSession(session.id, session.status);
                   }}
-                  disabled={
-                    deletingSessionId === session.id || session.status === 'active'
-                  }
+                  disabled={deletingSessionId === session.id}
                   aria-label={`Delete ${session.scenarioTitle}`}
                   className='inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/20 bg-white/5 text-white/60 transition hover:border-rose-300/50 hover:bg-rose-400/10 hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-50'
                 >
@@ -113,6 +142,23 @@ export function ProfileHistoryView({
               No recent sessions yet.
             </p>
           )}
+
+          {historyItems.length ? (
+            <div className='pt-1'>
+              <button
+                type='button'
+                onClick={onLoadMoreHistory}
+                disabled={!hasMoreHistory || isLoadingMoreHistory}
+                className='w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.1em] text-white/65 transition hover:border-amber-300/40 hover:text-amber-200 disabled:cursor-not-allowed disabled:opacity-45'
+              >
+                {isLoadingMoreHistory
+                  ? 'Loading more...'
+                  : hasMoreHistory
+                    ? 'Load older sessions'
+                    : 'All loaded'}
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </Panel>
