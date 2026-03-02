@@ -1,30 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { FaArrowLeft, FaBackward, FaGoogle } from 'react-icons/fa';
-import {
-  FiAlertCircle,
-  FiArrowRight,
-  FiCheckCircle,
-  FiLoader,
-} from 'react-icons/fi';
+import { FaArrowLeft, FaGoogle } from 'react-icons/fa';
+import { FiAlertCircle, FiLoader } from 'react-icons/fi';
 import { useAccessToken } from '@/lib/hooks/use-access-token';
-import {
-  beginGoogleOAuth,
-  useLogoutMutation,
-  useMeQuery,
-} from '@/lib/hooks/use-auth';
+import { beginGoogleOAuth, useMeQuery } from '@/lib/hooks/use-auth';
 
 export default function AuthPage() {
-  const router = useRouter();
-  const { accessToken, setAccessToken } = useAccessToken();
+  const { accessToken } = useAccessToken();
   const meQuery = useMeQuery(accessToken);
-  const logoutMutation = useLogoutMutation(setAccessToken);
 
   const [googleError, setGoogleError] = useState('');
-  const isAuthenticated = Boolean(meQuery.data?.user);
 
   const handleGoogle = () => {
     try {
@@ -54,10 +41,7 @@ export default function AuthPage() {
   }
 
   return (
-    <main
-      className='relative min-h-screen overflow-x-hidden'
-      style={{ fontFamily: "'DM Sans', sans-serif" }}
-    >
+    <main className='relative min-h-screen overflow-x-hidden'>
       <div className='relative z-10 mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-12 sm:px-6'>
         <section className='w-full max-w-md rounded-3xl border border-white/8 bg-[#131108]/80 p-6 backdrop-blur-xl sm:p-8'>
           <div className='mb-6 flex items-center justify-between'>
@@ -68,7 +52,7 @@ export default function AuthPage() {
               <FaArrowLeft />
               Home
             </Link>
-            <p className='text-xs uppercase tracking-[0.12em] text-amber-300/70'>
+            <p className='aldrich text-xs uppercase tracking-[0.12em] text-amber-300/70'>
               Rehearse
             </p>
           </div>

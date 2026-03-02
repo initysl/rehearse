@@ -58,10 +58,7 @@ export function FeaturesSection() {
           <p className='mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/30'>
             What Rehearse does
           </p>
-          <h2
-            style={{ fontFamily: 'Syne', fontWeight: 700 }}
-            className='mb-10 text-3xl text-white md:text-4xl'
-          >
+          <h2 className='aldrich mb-10 text-3xl font-semibold text-white md:text-4xl'>
             Practice smarter.{` `}
             <span className='bg-linear-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent'>
               Speak with confidence.
@@ -84,10 +81,7 @@ export function FeaturesSection() {
                 >
                   <feat.icon size={18} />
                 </div>
-                <h3
-                  style={{ fontFamily: 'Syne', fontWeight: 700 }}
-                  className='mb-2 text-[15px] text-white'
-                >
+                <h3 className='aldrich mb-2 text-[15px] font-semibold text-white'>
                   {feat.title}
                 </h3>
                 <p className='mb-4 text-[13px] leading-relaxed text-white/40'>

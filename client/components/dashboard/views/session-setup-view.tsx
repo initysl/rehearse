@@ -13,6 +13,7 @@ type SessionSetupViewProps = {
   isStarting: boolean;
   isEnding: boolean;
   activeSessionId: string | null;
+  hasLiveSession: boolean;
   errorMessage?: string;
 };
 
@@ -34,10 +35,12 @@ export function SessionSetupView({
   isStarting,
   isEnding,
   activeSessionId,
+  hasLiveSession,
   errorMessage,
 }: SessionSetupViewProps) {
   const selectedScenario =
     scenarios.find((scenario) => scenario.id === selectedScenarioId) || null;
+  const startDisabled = isStarting || hasLiveSession || !selectedScenarioId;
 
   return (
     <Panel
@@ -45,7 +48,11 @@ export function SessionSetupView({
       description='Choose scenario and difficulty before entering the live conversation.'
       rightSlot={
         <span className='rounded-full border border-white/20 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white/60'>
-          {activeSessionId ? 'Session live' : 'No active session'}
+          {hasLiveSession
+            ? 'Session live'
+            : activeSessionId
+              ? 'Session selected'
+              : 'No active session'}
         </span>
       }
     >
@@ -111,11 +118,15 @@ export function SessionSetupView({
         <button
           type='button'
           onClick={onStartSession}
-          disabled={isStarting || !selectedScenarioId}
+          disabled={startDisabled}
           className='inline-flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-500 to-orange-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#120f07] disabled:cursor-not-allowed disabled:opacity-60'
         >
           <FiPlayCircle size={13} />
-          {isStarting ? 'Starting...' : 'Start session'}
+          {isStarting
+            ? 'Starting...'
+            : hasLiveSession
+              ? 'Session already active'
+              : 'Start session'}
         </button>
 
         <button
@@ -127,6 +138,12 @@ export function SessionSetupView({
           {isEnding ? 'Ending...' : 'End session'}
         </button>
       </div>
+
+      {hasLiveSession ? (
+        <p className='mt-2 text-xs text-amber-200/80'>
+          End the current live session before starting a new one.
+        </p>
+      ) : null}
 
       {errorMessage ? <p className='mt-3 text-sm text-rose-300'>{errorMessage}</p> : null}
     </Panel>

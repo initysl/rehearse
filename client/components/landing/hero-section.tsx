@@ -39,12 +39,7 @@ export function HeroSection() {
               initial='hidden'
               animate='show'
               custom={1}
-              style={{
-                fontFamily: 'Syne',
-                fontWeight: 800,
-                letterSpacing: '-1.5px',
-              }}
-              className='mb-5 text-2xl leading-[1.01] text-white md:text-[58px] lg:text-[66px]'
+              className='aldrich mb-5 text-2xl leading-[1.01] text-white md:text-[58px] lg:text-[66px]'
             >
               Practice conversations
               <br />
@@ -204,14 +199,7 @@ export function HeroSection() {
                     <div className='flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/15 text-amber-400'>
                       <FiMic size={13} />
                     </div>
-                    <span
-                      style={{
-                        fontFamily: 'Syne',
-                        fontWeight: 700,
-                        fontSize: 14,
-                      }}
-                      className='text-white'
-                    >
+                    <span className='aldrich text-[14px] font-semibold text-white'>
                       Voice Practice
                     </span>
                   </div>
@@ -270,14 +258,7 @@ export function HeroSection() {
                       Session Score
                     </p>
                     <div className='mb-2 flex items-end gap-1'>
-                      <span
-                        style={{
-                          fontFamily: 'Syne',
-                          fontWeight: 800,
-                          fontSize: 36,
-                        }}
-                        className='leading-none text-white'
-                      >
+                      <span className='aldrich text-[36px] leading-none font-bold text-white'>
                         74
                       </span>
                       <span className='mb-1 text-sm text-white/35'>/100</span>
@@ -387,10 +368,7 @@ export function HeroSection() {
                 background: 'linear-gradient(135deg, #1c1a0b 0%, #141208 100%)',
               }}
             >
-              <h3
-                style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15 }}
-                className='mb-1 text-white'
-              >
+              <h3 className='aldrich mb-1 text-[15px] font-semibold text-white'>
                 Browse Scenarios
               </h3>
               <p className='mb-4 text-[12px] text-white/35'>

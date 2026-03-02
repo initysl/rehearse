@@ -62,7 +62,9 @@ export function ProfileHistoryView({
             <FiTrendingUp />
             Completed
           </p>
-          <p className='mt-1 text-xl font-semibold text-white'>{completedSessions}</p>
+          <p className='mt-1 text-xl font-semibold text-white'>
+            {completedSessions}
+          </p>
         </div>
 
         <div className='rounded-xl border border-white/15 bg-[#141414] p-3'>
@@ -70,7 +72,9 @@ export function ProfileHistoryView({
             <FiBarChart2 />
             Scenarios
           </p>
-          <p className='mt-1 text-xl font-semibold text-white'>{totalScenarios}</p>
+          <p className='mt-1 text-xl font-semibold text-white'>
+            {totalScenarios}
+          </p>
         </div>
       </div>
 
@@ -87,13 +91,10 @@ export function ProfileHistoryView({
                 void onClearRecentSessions();
               }}
               disabled={isClearingRecentSessions || historyItems.length === 0}
-              className='rounded-md border border-white/20 bg-white/5 px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] text-white/60 transition hover:border-amber-300/40 hover:text-amber-200 disabled:cursor-not-allowed disabled:opacity-50'
+              className='rounded-md border border-white/20 bg-white/5 px-2.5 py-1 text-[10px] uppercase tracking-widest text-white/60 transition hover:border-amber-300/40 hover:text-amber-200 disabled:cursor-not-allowed disabled:opacity-50'
             >
               {isClearingRecentSessions ? 'Clearing...' : 'Clear recent'}
             </button>
-            <p className='text-[10px] uppercase tracking-[0.1em] text-white/35'>
-              Tap <FiX className='mx-1 inline-block' size={10} /> to remove one
-            </p>
           </div>
         </div>
 
@@ -149,7 +150,7 @@ export function ProfileHistoryView({
                 type='button'
                 onClick={onLoadMoreHistory}
                 disabled={!hasMoreHistory || isLoadingMoreHistory}
-                className='w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.1em] text-white/65 transition hover:border-amber-300/40 hover:text-amber-200 disabled:cursor-not-allowed disabled:opacity-45'
+                className='w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs uppercase tracking-widest text-white/65 transition hover:border-amber-300/40 hover:text-amber-200 disabled:cursor-not-allowed disabled:opacity-45'
               >
                 {isLoadingMoreHistory
                   ? 'Loading more...'

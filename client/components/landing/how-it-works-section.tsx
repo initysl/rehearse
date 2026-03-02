@@ -43,10 +43,7 @@ export function HowItWorksSection() {
               <p className='mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/30'>
                 How it works
               </p>
-              <h2
-                style={{ fontFamily: 'Syne', fontWeight: 700 }}
-                className='mb-4 text-3xl text-white md:text-4xl'
-              >
+              <h2 className='aldrich mb-4 text-3xl font-semibold text-white md:text-4xl'>
                 Ready in under
                 <br />2 minutes.
               </h2>
@@ -60,20 +57,15 @@ export function HowItWorksSection() {
                 <Reveal key={step.n} delay={i}>
                   <div className='flex gap-4'>
                     <div
-                      className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] text-[13px] text-white/40'
+                      className='aldrich flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] text-[13px] font-semibold text-white/40'
                       style={{
-                        fontFamily: 'Syne',
-                        fontWeight: 700,
                         background: 'rgba(255,255,255,0.02)',
                       }}
                     >
                       {step.n}
                     </div>
                     <div>
-                      <h4
-                        style={{ fontFamily: 'Syne', fontWeight: 700 }}
-                        className='mb-0.5 text-[15px] text-white'
-                      >
+                      <h4 className='aldrich mb-0.5 text-[15px] font-semibold text-white'>
                         {step.title}
                       </h4>
                       <p className='text-[13px] text-white/40'>{step.desc}</p>

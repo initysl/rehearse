@@ -24,10 +24,7 @@ export function CtaSection() {
             <p className='relative mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/30'>
               Ready to start?
             </p>
-            <h2
-              style={{ fontFamily: 'Syne', fontWeight: 700 }}
-              className='relative mb-4 text-3xl text-white md:text-4xl'
-            >
+            <h2 className='aldrich relative mb-4 text-3xl font-semibold text-white md:text-4xl'>
               Run your first rehearsal now.
             </h2>
             <p className='relative mx-auto mb-8 max-w-md text-[15px] text-white/40'>

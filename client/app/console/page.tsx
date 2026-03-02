@@ -481,6 +481,7 @@ export default function ConsolePage() {
       isStarting={startSessionMutation.isPending}
       isEnding={endSessionMutation.isPending}
       activeSessionId={activeSessionId}
+      hasLiveSession={currentSessionStatus === 'active'}
       errorMessage={sessionErrorMessage}
     />
   );

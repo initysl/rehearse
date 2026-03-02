@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { FiLogOut } from 'react-icons/fi';
 import { dashboardNavItems } from './nav';
 import type { DashboardView } from './types';
@@ -14,6 +13,7 @@ type DashboardSidebarProps = {
   completedSessions: number;
   activeSession: boolean;
   mobile?: boolean;
+  compact?: boolean;
   className?: string;
 };
 
@@ -24,28 +24,32 @@ export function DashboardSidebar({
   onNavigate,
   userSummary,
   mobile = false,
+  compact = false,
   className,
 }: DashboardSidebarProps) {
   const avatarLabel = userSummary?.[0]?.toUpperCase() || 'U';
   const expanded = mobile;
+  const hoverExpandable = !mobile && !compact;
+  const sidebarWidthClass = mobile
+    ? 'w-75'
+    : compact
+      ? 'w-18.5'
+      : 'w-18.5 hover:w-[288px]';
+  const revealClass = expanded
+    ? 'opacity-100'
+    : hoverExpandable
+      ? 'max-w-0 opacity-0 group-hover/sidebar:max-w-45 group-hover/sidebar:opacity-100'
+      : 'max-w-0 opacity-0';
 
   return (
     <aside
-      className={`group/sidebar flex h-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#121212]/92 p-3 backdrop-blur-xl transition-[width] duration-300 ${
-        mobile ? 'w-75' : 'w-18.5 hover:w-[288px]'
-      } ${className || ''}`}
+      className={`group/sidebar flex h-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#121212]/92 p-3 backdrop-blur-xl transition-[width] duration-300 ${sidebarWidthClass} ${className || ''}`}
     >
       <div className='mb-4 flex items-center gap-2'>
         <span className='inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/90 text-[#111]'>
           <GiSparkles size={14} />
         </span>
-        <div
-          className={`min-w-0 transition ${
-            expanded
-              ? 'opacity-100'
-              : 'max-w-0 opacity-0 group-hover/sidebar:max-w-45 group-hover/sidebar:opacity-100'
-          }`}
-        >
+        <div className={`min-w-0 transition ${revealClass}`}>
           <p className='whitespace-nowrap text-xs font-semibold uppercase tracking-[0.12em] text-white/85'>
             Rehearse
           </p>
@@ -73,13 +77,7 @@ export function DashboardSidebar({
               }`}
             >
               <item.icon size={15} className='shrink-0' />
-              <div
-                className={`ml-2 min-w-0 transition ${
-                  expanded
-                    ? 'opacity-100'
-                    : 'max-w-0 opacity-0 group-hover/sidebar:max-w-45 group-hover/sidebar:opacity-100'
-                }`}
-              >
+              <div className={`ml-2 min-w-0 transition ${revealClass}`}>
                 <p className='whitespace-nowrap text-xs font-semibold'>
                   {item.label}
                 </p>
@@ -96,7 +94,9 @@ export function DashboardSidebar({
         className={`mt-3 rounded-xl border border-white/12 bg-white/6 p-3 transition ${
           expanded
             ? 'opacity-100'
-            : 'max-h-0 overflow-hidden p-0 opacity-0 group-hover/sidebar:max-h-40 group-hover/sidebar:p-3 group-hover/sidebar:opacity-100'
+            : hoverExpandable
+              ? 'max-h-0 overflow-hidden p-0 opacity-0 group-hover/sidebar:max-h-40 group-hover/sidebar:p-3 group-hover/sidebar:opacity-100'
+              : 'max-h-0 overflow-hidden p-0 opacity-0'
         }`}
       ></div>
 
@@ -111,7 +111,9 @@ export function DashboardSidebar({
             className={`ml-2 whitespace-nowrap text-xs font-semibold tracking-[0.08em] transition ${
               expanded
                 ? 'opacity-100'
-                : 'max-w-0 opacity-0 group-hover/sidebar:max-w-35 group-hover/sidebar:opacity-100'
+                : hoverExpandable
+                  ? 'max-w-0 opacity-0 group-hover/sidebar:max-w-35 group-hover/sidebar:opacity-100'
+                  : 'max-w-0 opacity-0'
             }`}
           >
             Sign out
@@ -126,7 +128,9 @@ export function DashboardSidebar({
             className={`truncate text-xs text-white/70 transition ${
               expanded
                 ? 'opacity-100'
-                : 'max-w-0 opacity-0 group-hover/sidebar:max-w-40 group-hover/sidebar:opacity-100'
+                : hoverExpandable
+                  ? 'max-w-0 opacity-0 group-hover/sidebar:max-w-40 group-hover/sidebar:opacity-100'
+                  : 'max-w-0 opacity-0'
             }`}
           >
             {userSummary}

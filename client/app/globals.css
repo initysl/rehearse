@@ -9,35 +9,44 @@
   --accent-coral: #e4572e;
   --accent-teal: #0f8a7b;
   --accent-sun: #f0b429;
-  --font-display: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
-  --font-body: 'Avenir Next', 'Segoe UI', 'Trebuchet MS', sans-serif;
 }
 
 @theme inline {
   --color-background: var(--canvas);
   --color-foreground: var(--ink-strong);
-  --font-sans: var(--font-body);
+  --font-sans: var(--nova-square);
   --font-mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
 }
 
 * {
   box-sizing: border-box;
+  scroll-behavior: smooth;
+}
+
+body,
+button,
+input,
+textarea,
+select {
+  font-family: var(--nova-square);
 }
 
 h1,
 h2,
 h3,
-h4 {
-  font-family: var(--font-nova-square);
+h4,
+h5,
+h6 {
+  font-family: var(--aldrich);
   letter-spacing: -0.015em;
 }
 
 .nova {
-  font-family: var(--font-nova-square);
+  font-family: var(--nova-square);
 }
 
 .aldrich {
-  font-family: var(--font-aldrich);
+  font-family: var(--aldrich);
 }
 
 .grid-pattern {

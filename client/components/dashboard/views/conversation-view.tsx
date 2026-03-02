@@ -216,7 +216,7 @@ export function ConversationView({
 
           <div
             ref={transcriptScrollerRef}
-            className='h-90 space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.2)_transparent] [scrollbar-width:thin] md:h-[300px]'
+            className='h-90 space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.2)_transparent] [scrollbar-width:thin] md:h-75'
           >
             {transcriptRows.length === 0 ? (
               <p className='rounded-xl border border-white/12 bg-white/2 px-3 py-2 text-sm text-white/45'>

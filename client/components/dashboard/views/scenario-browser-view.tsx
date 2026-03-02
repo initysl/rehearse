@@ -314,7 +314,12 @@ export function ScenarioBrowserView({
       return 'Situation details must be at least 10 characters.';
     if (!characterName) return 'Character name is required.';
     if (!characterRole) return 'Character role is required.';
-    if (!isVoiceValidForGender(formState.characterVoice, formState.characterGender)) {
+    if (
+      !isVoiceValidForGender(
+        formState.characterVoice,
+        formState.characterGender,
+      )
+    ) {
       return 'Selected voice must match selected gender.';
     }
     return null;
@@ -436,7 +441,7 @@ export function ScenarioBrowserView({
             </label>
           </div>
 
-          <div className='max-h-[52dvh] space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.22)_transparent] [scrollbar-width:thin]'>
+          <div className='max-h-[58dvh] space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.22)_transparent] [scrollbar-width:thin]'>
             {isLoading ? (
               <div className='flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-3 text-sm text-white/70'>
                 <FiLoader className='animate-spin' />
