@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+const preferenceScalarSchema = z.union([
+  z.string().max(200),
+  z.number().finite(),
+  z.boolean(),
+  z.null(),
+]);
+
+const preferencesSchema = z
+  .record(preferenceScalarSchema)
+  .refine(
+    (value) => Object.keys(value).length <= 40,
+    "preferences can contain at most 40 keys"
+  );
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -37,7 +51,7 @@ export const updateProfileSchema = z
   .object({
     fullName: z.string().min(1).max(120).optional(),
     avatarUrl: z.string().url().nullable().optional(),
-    preferences: z.record(z.unknown()).optional(),
+    preferences: preferencesSchema.optional(),
   })
   .refine(
     (payload) =>

@@ -91,15 +91,17 @@ export const streamTTS = async (
   let sequence = 0;
 
   for (const chunk of chunks) {
-    const audioBuffer = await convertToSpeech(chunk, voiceSelection);
+    const ttsResult = await convertToSpeech(chunk, voiceSelection);
     ws.send(
       JSON.stringify({
         type: "audio_response",
         sequence: sequence++,
-        size: audioBuffer.length,
+        size: ttsResult.audioBuffer.length,
+        mimeType: ttsResult.mimeType,
+        provider: ttsResult.provider,
       })
     );
-    ws.send(audioBuffer); // Send raw binary audio
+    ws.send(ttsResult.audioBuffer); // Send raw binary audio
   }
 
   ws.send(JSON.stringify({ type: "response_complete" }));

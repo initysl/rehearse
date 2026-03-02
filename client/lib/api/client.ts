@@ -5,6 +5,7 @@ export class ApiError extends Error {
   readonly status: number;
   readonly body: unknown;
   readonly code?: string;
+  readonly details?: Record<string, unknown>;
 
   constructor(message: string, status: number, body: unknown) {
     super(message);
@@ -17,6 +18,14 @@ export class ApiError extends Error {
       "code" in body &&
       typeof (body as { code?: unknown }).code === "string"
         ? (body as { code: string }).code
+        : undefined;
+    this.details =
+      typeof body === "object" &&
+      body !== null &&
+      "details" in body &&
+      typeof (body as { details?: unknown }).details === "object" &&
+      (body as { details?: unknown }).details !== null
+        ? ((body as { details: Record<string, unknown> }).details ?? undefined)
         : undefined;
   }
 }

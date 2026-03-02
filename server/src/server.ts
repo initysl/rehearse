@@ -11,6 +11,8 @@ import { logError, logInfo, logWarn } from "./utils/logger";
 import { handleVoiceSession } from "./voice/websocket.handler";
 
 const server = http.createServer(app);
+const SESSION_ID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const expectedClientOrigin = (() => {
   try {
@@ -68,7 +70,11 @@ const isAllowedWebSocketOrigin = (originHeader: string | undefined): boolean => 
 };
 
 // ── WebSocket Server (Voice) ──────────────────────────────────
-const wss = new WebSocketServer({ server, path: "/ws/voice" });
+const wss = new WebSocketServer({
+  server,
+  path: "/ws/voice",
+  maxPayload: 2 * 1024 * 1024,
+});
 
 wss.on("connection", async (ws, req) => {
   try {
@@ -94,6 +100,12 @@ wss.on("connection", async (ws, req) => {
         hasCookieToken: Boolean(tokenFromCookie),
       });
       ws.close(1008, "Missing sessionId or auth cookie");
+      return;
+    }
+
+    if (!SESSION_ID_REGEX.test(sessionId)) {
+      logWarn("voice.ws.reject.invalid_session_id", { sessionId });
+      ws.close(1008, "Invalid sessionId");
       return;
     }
 

@@ -21,6 +21,7 @@ type VoiceServerMessage = {
   text?: string;
   reason?: string;
   code?: string;
+  mimeType?: string;
 };
 
 type UseVoiceSessionOptions = {
@@ -76,6 +77,7 @@ export const useVoiceSession = ({
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const shouldSendAudioEndRef = useRef(false);
   const audioQueueRef = useRef<Blob[]>([]);
+  const incomingAudioMimeRef = useRef('audio/wav');
   const audioElRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
   const isPlayingRef = useRef(false);
@@ -251,6 +253,7 @@ export const useVoiceSession = ({
       setConnectionState('connected');
       setStatus('idle');
       setLastError(null);
+      incomingAudioMimeRef.current = 'audio/wav';
     };
 
     ws.onmessage = (event: MessageEvent) => {
@@ -311,6 +314,12 @@ export const useVoiceSession = ({
           return;
         }
 
+        if (parsed.type === 'audio_response') {
+          const mimeType = (parsed.mimeType || '').trim();
+          incomingAudioMimeRef.current = mimeType || 'audio/wav';
+          return;
+        }
+
         if (parsed.type === 'error') {
           const message = mapVoiceErrorToUserMessage({
             code: parsed.code,
@@ -326,9 +335,11 @@ export const useVoiceSession = ({
 
       const audioBlob =
         event.data instanceof ArrayBuffer
-          ? new Blob([event.data], { type: 'audio/wav' })
+          ? new Blob([event.data], { type: incomingAudioMimeRef.current || 'audio/wav' })
           : event.data instanceof Blob
-            ? event.data
+            ? event.data.type
+              ? event.data
+              : event.data.slice(0, event.data.size, incomingAudioMimeRef.current || 'audio/wav')
             : null;
 
       if (!audioBlob) return;
@@ -346,6 +357,7 @@ export const useVoiceSession = ({
       setConnectionState('disconnected');
       setStatus('idle');
       setIsRecording(false);
+      incomingAudioMimeRef.current = 'audio/wav';
       stopActiveMediaRecorder(false);
       releaseMediaStream();
     };
@@ -361,6 +373,7 @@ export const useVoiceSession = ({
       setIsRecording(false);
       setConnectionState('disconnected');
       setStatus('idle');
+      incomingAudioMimeRef.current = 'audio/wav';
     };
   }, [
     clearAudioPlayback,

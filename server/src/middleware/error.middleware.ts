@@ -5,6 +5,7 @@ import { toSafeHttpErrorMessage } from '../utils/public-error';
 export interface AppError extends Error {
   statusCode?: number;
   retryAfterSeconds?: number;
+  publicDetails?: Record<string, unknown>;
 }
 
 export const errorHandler = (
@@ -33,6 +34,9 @@ export const errorHandler = (
   res.status(statusCode).json({
     error: publicError.message,
     code: publicError.code,
+    ...(err.publicDetails && Object.keys(err.publicDetails).length > 0
+      ? { details: err.publicDetails }
+      : {}),
     requestId: req.requestId,
   });
 };

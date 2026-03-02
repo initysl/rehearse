@@ -12,9 +12,9 @@ import {
 const router = Router();
 
 router.post("/refresh-token", authRateLimit, refreshToken);
-router.get("/oauth/google", googleOAuth);
-router.get("/oauth/google/callback", googleOAuthCallback);
-router.post("/logout", logout);
+router.get("/oauth/google", authRateLimit, googleOAuth);
+router.get("/oauth/google/callback", authRateLimit, googleOAuthCallback);
+router.post("/logout", authRateLimit, logout);
 router.get("/me", authenticate, me);
 
 export default router;

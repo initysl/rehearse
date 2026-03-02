@@ -113,25 +113,6 @@ export function DashboardSidebar({
       </div>
 
       <div className='mt-3 space-y-2'>
-        <Link
-          href='/'
-          className='inline-flex h-10 w-full items-center rounded-lg border border-white/15 bg-white/5 px-2.5 text-white/75 no-underline transition hover:text-white'
-          onClick={onNavigate}
-        >
-          <span className='shrink-0 text-xs font-semibold uppercase tracking-[0.08em]'>
-            Home
-          </span>
-          <span
-            className={`ml-2 truncate text-xs transition ${
-              expanded
-                ? 'opacity-100'
-                : 'max-w-0 opacity-0 group-hover/sidebar:max-w-40 group-hover/sidebar:opacity-100'
-            }`}
-          >
-            Landing page
-          </span>
-        </Link>
-
         <button
           type='button'
           onClick={onLogout}

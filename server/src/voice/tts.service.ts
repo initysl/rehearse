@@ -10,7 +10,19 @@ const MALE_VOICE_IDS = ["austin", "daniel", "troy"] as const;
 const FEMALE_VOICE_IDS = ["autumn", "diana", "hannah"] as const;
 const ALL_VOICE_IDS = [...FEMALE_VOICE_IDS, ...MALE_VOICE_IDS] as const;
 type VoiceId = (typeof ALL_VOICE_IDS)[number];
-type TtsProvider = "groq" | "kokoro";
+type TtsProvider = "groq" | "elevenlabs";
+type TtsErrorCode =
+  | "RATE_LIMIT"
+  | "TIMEOUT"
+  | "NETWORK"
+  | "MISCONFIG"
+  | "PROVIDER_FAILURE";
+
+export interface TtsAudioResult {
+  audioBuffer: Buffer;
+  mimeType: string;
+  provider: TtsProvider;
+}
 
 const maleVoiceSet = new Set<string>(MALE_VOICE_IDS);
 const femaleVoiceSet = new Set<string>(FEMALE_VOICE_IDS);
@@ -60,9 +72,15 @@ const defaultGroqVoiceForGender = (gender: VoiceGender): VoiceId => {
   return configured && femaleVoiceSet.has(configured) ? configured : "autumn";
 };
 
-const defaultKokoroVoiceForGender = (gender: VoiceGender): string => {
-  if (gender === "male") return env.KOKORO_TTS_VOICE_MALE;
-  return env.KOKORO_TTS_VOICE_FEMALE;
+const defaultElevenLabsVoiceForGender = (gender: VoiceGender): string => {
+  const configured =
+    gender === "male"
+      ? env.ELEVENLABS_VOICE_MALE.trim()
+      : env.ELEVENLABS_VOICE_FEMALE.trim();
+  if (configured) return configured;
+  throw new Error(
+    `ElevenLabs voice ID is not configured for ${gender}. Set ELEVENLABS_VOICE_${gender.toUpperCase()}.`
+  );
 };
 
 interface SessionScenarioVoiceRow {
@@ -203,16 +221,50 @@ const groqVoiceForSelection = (selection: TtsVoiceSelection): string => {
   return defaultGroqVoiceForGender(selection.gender);
 };
 
-const kokoroVoiceForSelection = (selection: TtsVoiceSelection): string => {
-  // Kokoro uses its own voice IDs. App-level voiceId (autumn/diana/...) is Groq Orpheus-specific.
-  // For Kokoro, only gender determines default voice.
-  return defaultKokoroVoiceForGender(selection.gender);
+const elevenLabsVoiceForSelection = (selection: TtsVoiceSelection): string => {
+  return defaultElevenLabsVoiceForGender(selection.gender);
+};
+
+class TtsProviderError extends Error {
+  provider: TtsProvider;
+  code: TtsErrorCode;
+
+  constructor(provider: TtsProvider, code: TtsErrorCode, message: string) {
+    super(message);
+    this.provider = provider;
+    this.code = code;
+  }
+}
+
+const classifyTtsError = (message: string): TtsErrorCode => {
+  const normalized = message.toLowerCase();
+  if (
+    /(rate limit|429|quota|token[s ]per day|tpm|tpd|rpd|rpm|billing|service tier|org_)/i.test(
+      normalized
+    )
+  ) {
+    return "RATE_LIMIT";
+  }
+  if (/(timed out|timeout|aborted|aborterror)/i.test(normalized)) {
+    return "TIMEOUT";
+  }
+  if (
+    /(connection|econnreset|econnrefused|enotfound|enetunreach|fetch failed|network)/i.test(
+      normalized
+    )
+  ) {
+    return "NETWORK";
+  }
+  if (/(not configured|misconfig|missing)/i.test(normalized)) {
+    return "MISCONFIG";
+  }
+  return "PROVIDER_FAILURE";
 };
 
 const groqProvider = async (
   normalizedText: string,
   selection: TtsVoiceSelection
-): Promise<Buffer> => {
+): Promise<TtsAudioResult> => {
   const voice = groqVoiceForSelection(selection);
   const estimatedTokens = estimateTextTokens(normalizedText);
 
@@ -254,7 +306,11 @@ const groqProvider = async (
       latencyMs: Date.now() - startedAt,
       bytes: buffer.length,
     });
-    return buffer;
+    return {
+      audioBuffer: buffer,
+      mimeType: "audio/wav",
+      provider: "groq",
+    };
   } catch (error) {
     const message = (error as Error).message || "Unknown Groq TTS failure";
     logWarn("voice.tts.provider_failed", {
@@ -264,85 +320,88 @@ const groqProvider = async (
       latencyMs: Date.now() - startedAt,
       error: message,
     });
-    throw new Error(message);
+    throw new TtsProviderError("groq", classifyTtsError(message), message);
   }
 };
 
-type KokoroResponse = {
-  audio_base64?: string;
-};
-
-const kokoroProvider = async (
+const elevenLabsProvider = async (
   normalizedText: string,
   selection: TtsVoiceSelection
-): Promise<Buffer> => {
-  const voice = kokoroVoiceForSelection(selection);
+): Promise<TtsAudioResult> => {
+  const apiKey = env.ELEVENLABS_API_KEY.trim();
+  if (!apiKey) {
+    throw new TtsProviderError(
+      "elevenlabs",
+      "MISCONFIG",
+      "ElevenLabs API key is not configured."
+    );
+  }
+
+  const voiceId = elevenLabsVoiceForSelection(selection);
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), env.TTS_TIMEOUT_MS);
   const startedAt = Date.now();
 
   try {
-    const response = await fetch(env.KOKORO_TTS_URL, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        accept: "audio/wav,application/json",
-      },
-      body: JSON.stringify({
-        text: normalizedText,
-        voice,
-        lang_code: env.KOKORO_TTS_LANG_CODE,
-        speed: env.KOKORO_TTS_SPEED,
-      }),
-      signal: timeoutController.signal,
-    });
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(
+        voiceId
+      )}/stream?output_format=mp3_44100_128`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+          "content-type": "application/json",
+          accept: "audio/mpeg",
+        },
+        body: JSON.stringify({
+          text: normalizedText,
+          model_id: env.ELEVENLABS_MODEL_ID,
+        }),
+        signal: timeoutController.signal,
+      }
+    );
 
     if (!response.ok) {
       const rawErrorBody = await response.text();
       const errorBody = rawErrorBody.trim().slice(0, 240);
       throw new Error(
-        `Kokoro TTS request failed with ${response.status}${
+        `ElevenLabs TTS request failed with ${response.status}${
           errorBody ? `: ${errorBody}` : ""
         }`
       );
     }
 
-    const contentType = (response.headers.get("content-type") || "").toLowerCase();
-    let buffer: Buffer;
-    if (contentType.includes("application/json")) {
-      const payload = (await response.json()) as KokoroResponse;
-      if (!payload.audio_base64) {
-        throw new Error("Kokoro JSON response did not include audio_base64.");
-      }
-      buffer = Buffer.from(payload.audio_base64, "base64");
-    } else {
-      buffer = Buffer.from(await response.arrayBuffer());
-    }
-
+    const buffer = Buffer.from(await response.arrayBuffer());
     if (!buffer.length) {
-      throw new Error("Kokoro TTS returned an empty audio payload.");
+      throw new Error("ElevenLabs TTS returned an empty audio payload.");
     }
 
     logInfo("voice.tts.provider_succeeded", {
-      provider: "kokoro",
-      voice,
+      provider: "elevenlabs",
+      model: env.ELEVENLABS_MODEL_ID,
+      voice: voiceId,
       latencyMs: Date.now() - startedAt,
       bytes: buffer.length,
     });
-    return buffer;
+    return {
+      audioBuffer: buffer,
+      mimeType: "audio/mpeg",
+      provider: "elevenlabs",
+    };
   } catch (error) {
     const message =
       (error as Error).name === "AbortError"
-        ? `Kokoro TTS request timed out after ${env.TTS_TIMEOUT_MS}ms`
-        : (error as Error).message || "Unknown Kokoro TTS failure";
-
+        ? `ElevenLabs TTS request timed out after ${env.TTS_TIMEOUT_MS}ms`
+        : (error as Error).message || "Unknown ElevenLabs TTS failure";
     logWarn("voice.tts.provider_failed", {
-      provider: "kokoro",
-      voice,
+      provider: "elevenlabs",
+      model: env.ELEVENLABS_MODEL_ID,
+      voice: voiceId,
       latencyMs: Date.now() - startedAt,
       error: message,
     });
-    throw new Error(message);
+    throw new TtsProviderError("elevenlabs", classifyTtsError(message), message);
   } finally {
     clearTimeout(timeoutId);
   }
@@ -362,16 +421,35 @@ const providerChain = (): TtsProvider[] => {
   return providers;
 };
 
+const shouldAttemptFallback = (
+  failedProvider: TtsProvider,
+  error: Error
+): boolean => {
+  if (env.TTS_FALLBACK_POLICY === "always") {
+    return true;
+  }
+
+  if (env.TTS_FALLBACK_POLICY === "rate_limit_only") {
+    if (failedProvider !== "groq") return false;
+    if (error instanceof TtsProviderError) {
+      return error.code === "RATE_LIMIT";
+    }
+    return classifyTtsError(error.message || "") === "RATE_LIMIT";
+  }
+
+  return false;
+};
+
 export const convertToSpeech = async (
   text: string,
   selection: TtsVoiceSelection = { gender: "female" }
-): Promise<Buffer> => {
+): Promise<TtsAudioResult> => {
   const normalizedText = normalizeTextForTts(text);
   const providers = providerChain();
 
   if (!providers.length) {
     throw new Error(
-      "No TTS provider configured. Set TTS_PROVIDER to kokoro or groq."
+      "No TTS provider configured. Set TTS_PROVIDER to groq or elevenlabs."
     );
   }
 
@@ -385,19 +463,30 @@ export const convertToSpeech = async (
 
   for (const provider of providers) {
     try {
-      if (provider === "kokoro") {
-        return await kokoroProvider(normalizedText, selection);
+      if (provider === "elevenlabs") {
+        return await elevenLabsProvider(normalizedText, selection);
       }
       return await groqProvider(normalizedText, selection);
     } catch (error) {
       lastError = error as Error;
-      if (provider !== providers[providers.length - 1]) {
+      const hasNextProvider = provider !== providers[providers.length - 1];
+      if (hasNextProvider && shouldAttemptFallback(provider, lastError)) {
         logWarn("voice.tts.fallback_attempt", {
           failedProvider: provider,
           nextProvider: providers[providers.indexOf(provider) + 1],
           error: lastError.message,
         });
+        continue;
       }
+      if (hasNextProvider) {
+        logWarn("voice.tts.fallback_skipped", {
+          failedProvider: provider,
+          nextProvider: providers[providers.indexOf(provider) + 1],
+          policy: env.TTS_FALLBACK_POLICY,
+          error: lastError.message,
+        });
+      }
+      throw new Error(lastError.message);
     }
   }
 

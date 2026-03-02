@@ -77,7 +77,7 @@ Base URL (local): `http://localhost:5000`
 
 - Endpoint: `ws://localhost:5000/ws/voice?sessionId=<uuid>`
 - Auth: secure auth cookie is required on the WebSocket handshake.
-- Backend TTS provider: configurable (`TTS_PROVIDER=kokoro|groq`, optional `TTS_FALLBACK_PROVIDER`)
+- Backend TTS provider: configurable (`TTS_PROVIDER=groq|elevenlabs`, optional `TTS_FALLBACK_PROVIDER`)
 - Message flow:
   - Client sends JSON `{ "type": "audio_start", "mimeType": "audio/webm;codecs=opus" }`
   - Client streams binary `audio_chunk` frames

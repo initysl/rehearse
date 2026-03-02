@@ -15,22 +15,27 @@ const parseNumber = (value: string | undefined, fallback: number): number => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const parseDecimal = (value: string | undefined, fallback: number): number => {
-  if (!value) return fallback;
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
 const parseTtsProvider = (
   value: string | undefined,
-  fallback: 'groq' | 'kokoro' | 'none',
-): 'groq' | 'kokoro' | 'none' => {
+  fallback: 'groq' | 'elevenlabs' | 'none',
+): 'groq' | 'elevenlabs' | 'none' => {
   const normalized = value?.trim().toLowerCase();
   if (
     normalized === 'groq' ||
-    normalized === 'kokoro' ||
+    normalized === 'elevenlabs' ||
     normalized === 'none'
   ) {
+    return normalized;
+  }
+  return fallback;
+};
+
+const parseTtsFallbackPolicy = (
+  value: string | undefined,
+  fallback: 'always' | 'rate_limit_only',
+): 'always' | 'rate_limit_only' => {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === 'always' || normalized === 'rate_limit_only') {
     return normalized;
   }
   return fallback;
@@ -85,12 +90,16 @@ export const env = {
     process.env.TTS_FALLBACK_PROVIDER,
     'none',
   ),
+  TTS_FALLBACK_POLICY: parseTtsFallbackPolicy(
+    process.env.TTS_FALLBACK_POLICY,
+    'rate_limit_only',
+  ),
   TTS_TIMEOUT_MS: parseNumber(process.env.TTS_TIMEOUT_MS, 60000),
-  KOKORO_TTS_URL: process.env.KOKORO_TTS_URL || 'http://127.0.0.1:8001/tts',
-  KOKORO_TTS_LANG_CODE: process.env.KOKORO_TTS_LANG_CODE || 'a',
-  KOKORO_TTS_SPEED: parseDecimal(process.env.KOKORO_TTS_SPEED, 1.0),
-  KOKORO_TTS_VOICE_MALE: process.env.KOKORO_TTS_VOICE_MALE || 'am_fenrir',
-  KOKORO_TTS_VOICE_FEMALE: process.env.KOKORO_TTS_VOICE_FEMALE || 'af_heart',
+  ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || '',
+  ELEVENLABS_MODEL_ID:
+    process.env.ELEVENLABS_MODEL_ID || 'eleven_flash_v2_5',
+  ELEVENLABS_VOICE_MALE: process.env.ELEVENLABS_VOICE_MALE || '',
+  ELEVENLABS_VOICE_FEMALE: process.env.ELEVENLABS_VOICE_FEMALE || '',
   GROQ_STREAM_TIMEOUT_MS: parseInt(
     process.env.GROQ_STREAM_TIMEOUT_MS || '30000',
     10,
@@ -108,4 +117,8 @@ export const env = {
   GROQ_AUDIO_BYTES_PER_SECOND_ESTIMATE:
     parseInt(process.env.GROQ_AUDIO_BYTES_PER_SECOND_ESTIMATE || '6000', 10) ||
     6000,
+  PUBLIC_DAILY_SESSION_LIMIT: Math.max(
+    1,
+    parseNumber(process.env.PUBLIC_DAILY_SESSION_LIMIT, 3),
+  ),
 };

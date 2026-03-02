@@ -15,6 +15,7 @@ export type VoicePublicCode =
 
 export type HttpPublicCode =
   | "VALIDATION_ERROR"
+  | "DAILY_LIMIT_REACHED"
   | "UNAUTHORIZED"
   | "FORBIDDEN"
   | "NOT_FOUND"
@@ -115,6 +116,19 @@ export const toSafeHttpErrorMessage = (
     return { code: "CONFLICT", message: "Request conflict." };
   }
   if (statusCode === 429) {
+    const message = normalizeMessage(rawMessage);
+    if (
+      contains(
+        message,
+        /(daily session limit|daily practice limit|free tier|free plan)/i
+      )
+    ) {
+      return {
+        code: "DAILY_LIMIT_REACHED",
+        message:
+          "Daily free-plan practice limit reached. Please try again tomorrow.",
+      };
+    }
     return {
       code: "RATE_LIMITED",
       message: "Too many requests. Please try again later.",

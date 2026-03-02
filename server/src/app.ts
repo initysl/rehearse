@@ -13,6 +13,7 @@ import feedbackRoutes from "./modules/feedback/feedback.routes";
 import userRoutes from "./modules/users/users.routes";
 
 const app = express();
+app.disable("x-powered-by");
 const expectedClientOrigin = (() => {
   try {
     return new URL(env.CLIENT_URL).origin;
@@ -41,7 +42,7 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
+app.use(express.json({ limit: "32kb" }));
 app.use(requestLogger);
 
 // ── Routes ───────────────────────────────────────────────────

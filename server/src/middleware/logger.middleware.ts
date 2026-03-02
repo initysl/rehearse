@@ -4,9 +4,16 @@ import { logInfo } from "../utils/logger";
 
 export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
   const incomingRequestId = req.header("x-request-id");
-  const requestId =
-    incomingRequestId && incomingRequestId.trim().length > 0
+  const normalizedRequestId =
+    typeof incomingRequestId === "string" &&
+    incomingRequestId.length > 0 &&
+    incomingRequestId.length <= 128 &&
+    /^[A-Za-z0-9._-]+$/.test(incomingRequestId)
       ? incomingRequestId
+      : null;
+  const requestId =
+    normalizedRequestId
+      ? normalizedRequestId
       : crypto.randomUUID();
 
   req.requestId = requestId;
