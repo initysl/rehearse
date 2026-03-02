@@ -28,8 +28,16 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: var(--font-display);
+  font-family: var(--font-nova-square);
   letter-spacing: -0.015em;
+}
+
+.nova {
+  font-family: var(--font-nova-square);
+}
+
+.aldrich {
+  font-family: var(--font-aldrich);
 }
 
 .grid-pattern {

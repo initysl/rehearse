@@ -1,7 +1,20 @@
 import type { Metadata } from 'next';
+import { Aldrich, Nova_Square } from 'next/font/google';
 import './globals.css';
-import { Providers } from './providers';
 import { AmbientBackground } from '@/components/landing/ambient-background';
+import { Providers } from './providers';
+
+const nova = Nova_Square({
+  variable: '--nova-square',
+  subsets: ['latin'],
+  weight: '400',
+});
+
+const aldrich = Aldrich({
+  variable: '--aldrich',
+  subsets: ['latin'],
+  weight: '400',
+});
 
 export const metadata: Metadata = {
   title: 'Rehearse Client',
@@ -15,7 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en'>
-      <body className='relative min-h-screen bg-[#0f0e06] antialiased'>
+      <body
+        className={`${nova.variable} ${aldrich.variable} relative min-h-screen bg-[#0f0e06] antialiased`}
+      >
         <AmbientBackground />
         <div className='relative z-10'>
           <Providers>{children}</Providers>
