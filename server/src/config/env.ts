@@ -117,8 +117,4 @@ export const env = {
   GROQ_AUDIO_BYTES_PER_SECOND_ESTIMATE:
     parseInt(process.env.GROQ_AUDIO_BYTES_PER_SECOND_ESTIMATE || '6000', 10) ||
     6000,
-  PUBLIC_DAILY_SESSION_LIMIT: Math.max(
-    1,
-    parseNumber(process.env.PUBLIC_DAILY_SESSION_LIMIT, 3),
-  ),
 };

@@ -2,8 +2,6 @@ import { ApiError } from "../api/client";
 
 const apiCodeMessages: Record<string, string> = {
   VALIDATION_ERROR: "Some inputs are invalid. Please review and try again.",
-  DAILY_LIMIT_REACHED:
-    "Daily free-plan practice limit reached. Try again tomorrow.",
   UNAUTHORIZED: "Please sign in to continue.",
   FORBIDDEN: "You do not have permission to do this.",
   NOT_FOUND: "The requested item was not found.",
@@ -34,23 +32,6 @@ export const mapApiErrorToUserMessage = (
   }
 
   if (error.code && apiCodeMessages[error.code]) {
-    if (error.code === "DAILY_LIMIT_REACHED" && error.details) {
-      const resetsInSecondsRaw = error.details.resetsInSeconds;
-      const limitRaw = error.details.limit;
-      const startedTodayRaw = error.details.startedToday;
-
-      const resetsInSeconds =
-        typeof resetsInSecondsRaw === "number" ? resetsInSecondsRaw : null;
-      const limit = typeof limitRaw === "number" ? limitRaw : null;
-      const startedToday =
-        typeof startedTodayRaw === "number" ? startedTodayRaw : null;
-
-      if (resetsInSeconds && limit !== null && startedToday !== null) {
-        const hours = Math.floor(resetsInSeconds / 3600);
-        const minutes = Math.floor((resetsInSeconds % 3600) / 60);
-        return `Daily free-plan limit reached (${startedToday}/${limit}). Resets in ${hours}h ${minutes}m.`;
-      }
-    }
     return apiCodeMessages[error.code];
   }
 

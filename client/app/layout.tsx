@@ -17,7 +17,7 @@ const aldrich = Aldrich({
 });
 
 export const metadata: Metadata = {
-  title: 'Rehearse Client',
+  title: 'Rehearse- AI converstion simulator',
   description: 'Rehearse frontend integration shell',
 };
 

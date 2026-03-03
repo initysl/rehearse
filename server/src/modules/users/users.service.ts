@@ -11,7 +11,6 @@ interface ProfileRow {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
-  subscription_tier: "free" | "pro" | "enterprise";
   preferences: Record<string, unknown> | null;
   created_at: Date;
   updated_at: Date;
@@ -39,7 +38,6 @@ const toUserProfile = (row: ProfileRow): UserProfile => ({
   email: row.email,
   fullName: row.full_name,
   avatarUrl: row.avatar_url,
-  subscriptionTier: row.subscription_tier,
   preferences: row.preferences || {},
   createdAt: row.created_at,
   updatedAt: row.updated_at,
@@ -65,7 +63,6 @@ export const findProfileByUserId = async (
       email,
       full_name,
       avatar_url,
-      subscription_tier,
       preferences,
       created_at,
       updated_at
@@ -97,12 +94,11 @@ export const updateProfileByUserId = async (
       preferences = CASE WHEN $5::boolean THEN $6::jsonb ELSE preferences END,
       updated_at = NOW()
      WHERE id = $1
-     RETURNING
+      RETURNING
       id,
       email,
       full_name,
       avatar_url,
-      subscription_tier,
       preferences,
       created_at,
       updated_at`,

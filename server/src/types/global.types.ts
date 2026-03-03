@@ -9,7 +9,6 @@ export interface JwtPayload {
 export interface User {
   id: string;
   email: string;
-  subscriptionTier: 'free' | 'pro' | 'enterprise';
   createdAt: Date;
 }
 

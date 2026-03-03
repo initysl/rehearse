@@ -19,7 +19,6 @@ export interface UserProfile {
   email: string;
   fullName: string | null;
   avatarUrl: string | null;
-  subscriptionTier: "free" | "pro" | "enterprise";
   preferences: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;

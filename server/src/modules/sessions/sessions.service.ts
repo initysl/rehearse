@@ -1,5 +1,4 @@
 import { db } from "../../config/db";
-import { env } from "../../config/env";
 import {
   ClearSessionHistoryQuery,
   EndSessionInput,
@@ -35,15 +34,6 @@ interface SessionHistoryRow extends SessionRow {
   scenario_title: string;
   scenario_category: string;
   message_count: string;
-}
-
-interface ProfileTierRow {
-  subscription_tier: "free" | "pro" | "enterprise";
-}
-
-interface DailyUsageRow {
-  started_today: number;
-  retry_after_seconds: number;
 }
 
 const mapSession = (row: SessionRow): SessionDto => ({
@@ -89,82 +79,6 @@ const getSessionRowById = async (
   return result.rows[0] || null;
 };
 
-const createHttpError = (
-  statusCode: number,
-  message: string,
-  retryAfterSeconds?: number,
-  publicDetails?: Record<string, unknown>
-): Error => {
-  const err = new Error(message) as Error & {
-    statusCode?: number;
-    retryAfterSeconds?: number;
-    publicDetails?: Record<string, unknown>;
-  };
-  err.statusCode = statusCode;
-  if (retryAfterSeconds && retryAfterSeconds > 0) {
-    err.retryAfterSeconds = retryAfterSeconds;
-  }
-  if (publicDetails && Object.keys(publicDetails).length > 0) {
-    err.publicDetails = publicDetails;
-  }
-  return err;
-};
-
-const enforceDailySessionLimit = async (
-  client: import("pg").PoolClient,
-  userId: string
-): Promise<void> => {
-  const profile = await client.query<ProfileTierRow>(
-    `SELECT subscription_tier
-     FROM public.profiles
-     WHERE id = $1
-     LIMIT 1`,
-    [userId]
-  );
-
-  const tier = profile.rows[0]?.subscription_tier || "free";
-  if (tier !== "free") {
-    return;
-  }
-
-  const usage = await client.query<DailyUsageRow>(
-    `SELECT
-       COUNT(*)::int AS started_today,
-       GREATEST(
-         1,
-         EXTRACT(
-           EPOCH FROM (
-             (date_trunc('day', timezone('UTC', NOW())) + INTERVAL '1 day')
-             - timezone('UTC', NOW())
-           )
-         )::int
-       ) AS retry_after_seconds
-     FROM public.sessions
-     WHERE user_id = $1
-       AND timezone('UTC', started_at)::date = timezone('UTC', NOW())::date`,
-    [userId]
-  );
-
-  const startedToday = Number(usage.rows[0]?.started_today || 0);
-  if (startedToday < env.PUBLIC_DAILY_SESSION_LIMIT) {
-    return;
-  }
-
-  const retryAfterSeconds = Number(usage.rows[0]?.retry_after_seconds || 3600);
-  throw createHttpError(
-    429,
-    `Daily session limit reached for free tier (${env.PUBLIC_DAILY_SESSION_LIMIT}/day).`,
-    retryAfterSeconds,
-    {
-      startedToday,
-      limit: env.PUBLIC_DAILY_SESSION_LIMIT,
-      resetsInSeconds: retryAfterSeconds,
-      remainingToday: Math.max(0, env.PUBLIC_DAILY_SESSION_LIMIT - startedToday),
-      tier,
-    }
-  );
-};
-
 export const startSession = async (
   userId: string,
   payload: StartSessionInput
@@ -186,8 +100,6 @@ export const startSession = async (
       await client.query("ROLLBACK");
       return null;
     }
-
-    await enforceDailySessionLimit(client, userId);
 
     const session = await client.query<SessionRow>(
       `INSERT INTO public.sessions (

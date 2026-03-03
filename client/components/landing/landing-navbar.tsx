@@ -61,7 +61,107 @@ export function LandingNavbar() {
         <div className='mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6'>
           <Link href='/' className='flex items-center gap-2.5 no-underline'>
             <div className='flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-amber-400 to-orange-600 text-sm shadow-lg shadow-amber-900/30'>
-              🎙️
+              <svg
+                width='128'
+                height='128'
+                viewBox='0 0 128 128'
+                xmlns='http://www.w3.org/2000/svg'
+              >
+                <defs>
+                  <linearGradient
+                    id='bgGradient'
+                    x1='0%'
+                    y1='0%'
+                    x2='0%'
+                    y2='100%'
+                  >
+                    <stop
+                      offset='0%'
+                      stopColor='#1e1e1a'
+                      stopOpacity='1'
+                    />
+                    <stop
+                      offset='100%'
+                      stopColor='#0d0d0c'
+                      stopOpacity='1'
+                    />
+                  </linearGradient>
+
+                  <linearGradient
+                    id='iconGradient'
+                    x1='0%'
+                    y1='0%'
+                    x2='100%'
+                    y2='100%'
+                  >
+                    <stop
+                      offset='0%'
+                      stopColor='#f59e0b'
+                      stopOpacity='1'
+                    />
+                    <stop
+                      offset='100%'
+                      stopColor='#ea580c'
+                      stopOpacity='1'
+                    />
+                  </linearGradient>
+
+                  <filter
+                    id='glowFilter'
+                    x='-20%'
+                    y='-20%'
+                    width='140%'
+                    height='140%'
+                  >
+                    <feGaussianBlur stdDeviation='3' result='coloredBlur' />
+                    <feMerge>
+                      <feMergeNode in='coloredBlur' />
+                      <feMergeNode in='SourceGraphic' />
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                <rect
+                  x='0'
+                  y='0'
+                  width='128'
+                  height='128'
+                  rx='20'
+                  ry='20'
+                  fill='url(#bgGradient)'
+                />
+
+                <g
+                  filter='url(#glowFilter)'
+                  strokeWidth='4'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  fill='none'
+                  stroke='url(#iconGradient)'
+                >
+                  <path
+                    d='M 28 88.3 C 21.6 88.3 16.5 83.2 16.5 76.8 V 29.5 C 16.5 23.1 21.6 18 28 18 H 80.5 C 86.9 18 92 23.1 92 29.5 V 76.8 C 92 83.2 86.9 88.3 80.5 88.3 H 67.5 Q 64.5 91 63 94.5 L 61 98.3 Q 59.5 94.5 56.5 91 H 28 Z'
+                    transform='translate(10,10)'
+                  />
+
+                  <path
+                    d='M 92 29.5 A 33 33 0 1 1 59.1 63.8'
+                    transform='translate(10,10)'
+                    fill='none'
+                  />
+                  <polygon
+                    points='56,66.3 59.1,63.8 62.2,66.3 59.1,61.3'
+                    transform='translate(10,10)'
+                    stroke='none'
+                    fill='url(#iconGradient)'
+                  />
+
+                  <path
+                    d='M 37 72 Q 41.5 60 45 48 A 7 7 0 0 1 56 42 L 67 42 C 73 42 75 46 75 51 A 6 6 0 0 1 67 59 L 52 59 C 48.5 59 47 62 47 64 L 47 70 A 5 5 0 0 0 54 75 L 75 75 A 3 3 0 0 0 78 72 Z'
+                    transform='translate(10,10)'
+                  />
+                </g>
+              </svg>
             </div>
             <span className='aldrich text-[17px] font-semibold text-white'>
               Rehearse
