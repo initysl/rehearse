@@ -1,7 +1,7 @@
 import { FiLogOut } from 'react-icons/fi';
 import { dashboardNavItems } from './nav';
 import type { DashboardView } from './types';
-import { GiSparkles } from 'react-icons/gi';
+import Image from 'next/image';
 
 type DashboardSidebarProps = {
   activeView: DashboardView;
@@ -46,13 +46,15 @@ export function DashboardSidebar({
       className={`group/sidebar flex h-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#121212]/92 p-3 backdrop-blur-xl transition-[width] duration-300 ${sidebarWidthClass} ${className || ''}`}
     >
       <div className='mb-4 flex items-center gap-2'>
-        <span className='inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/90 text-[#111]'>
-          <GiSparkles size={14} />
+        <span className='inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#111]'>
+          <Image
+            src='/rehearse.svg'
+            alt='Rehearse logo'
+            width={60}
+            height={50}
+          />
         </span>
         <div className={`min-w-0 transition ${revealClass}`}>
-          <p className='whitespace-nowrap text-xs font-semibold uppercase tracking-[0.12em] text-white/85'>
-            Rehearse
-          </p>
           <p className='truncate text-[11px] text-white/45'>Training Console</p>
         </div>
       </div>
