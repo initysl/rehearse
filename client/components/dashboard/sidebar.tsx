@@ -94,24 +94,14 @@ export function DashboardSidebar({
         })}
       </nav>
 
-      <div
-        className={`mt-3 rounded-xl border border-white/12 bg-white/6 p-3 transition ${
-          expanded
-            ? 'opacity-100'
-            : hoverExpandable
-              ? 'max-h-0 overflow-hidden p-0 opacity-0 group-hover/sidebar:max-h-40 group-hover/sidebar:p-3 group-hover/sidebar:opacity-100'
-              : 'max-h-0 overflow-hidden p-0 opacity-0'
-        }`}
-      ></div>
-
       <div className='mt-3 space-y-2'>
         <a
           href={showLoveUrl}
           target='_blank'
           rel='noopener noreferrer'
-          className='inline-flex h-10 w-full items-center rounded-lg border border-amber-300/30 bg-amber-500/10 px-2.5 text-amber-100 transition hover:bg-amber-500/20'
+          className='inline-flex h-10 w-full items-center rounded-lg  px-2.5 text-amber-100 transition hover:bg-amber-500/20'
         >
-          <FiHeart size={14} className='shrink-0' />
+          <FiHeart size={20} className='shrink-0' />
           <span
             className={`ml-2 whitespace-nowrap text-xs font-semibold tracking-[0.08em] transition ${
               expanded
@@ -130,7 +120,7 @@ export function DashboardSidebar({
           onClick={onLogout}
           className='inline-flex h-10 w-full items-center rounded-lg bg-linear-to-r from-amber-500 to-orange-600 px-2.5 text-[#120f07] transition hover:brightness-105'
         >
-          <FiLogOut size={14} className='shrink-0' />
+          <FiLogOut size={20} className='shrink-0' />
           <span
             className={`ml-2 whitespace-nowrap text-xs font-semibold tracking-[0.08em] transition ${
               expanded
