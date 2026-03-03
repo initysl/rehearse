@@ -1,7 +1,9 @@
-import { FiLogOut } from 'react-icons/fi';
+import { FiHeart, FiLogOut } from 'react-icons/fi';
 import { dashboardNavItems } from './nav';
 import type { DashboardView } from './types';
 import Image from 'next/image';
+
+const showLoveUrl = 'https://selar.com/showlove/initysl';
 
 type DashboardSidebarProps = {
   activeView: DashboardView;
@@ -103,6 +105,26 @@ export function DashboardSidebar({
       ></div>
 
       <div className='mt-3 space-y-2'>
+        <a
+          href={showLoveUrl}
+          target='_blank'
+          rel='noopener noreferrer'
+          className='inline-flex h-10 w-full items-center rounded-lg border border-amber-300/30 bg-amber-500/10 px-2.5 text-amber-100 transition hover:bg-amber-500/20'
+        >
+          <FiHeart size={14} className='shrink-0' />
+          <span
+            className={`ml-2 whitespace-nowrap text-xs font-semibold tracking-[0.08em] transition ${
+              expanded
+                ? 'opacity-100'
+                : hoverExpandable
+                  ? 'max-w-0 opacity-0 group-hover/sidebar:max-w-35 group-hover/sidebar:opacity-100'
+                  : 'max-w-0 opacity-0'
+            }`}
+          >
+            Show Love
+          </span>
+        </a>
+
         <button
           type='button'
           onClick={onLogout}

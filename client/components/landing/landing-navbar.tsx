@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { FiMenu, FiX } from 'react-icons/fi';
 
+const showLoveUrl = 'https://selar.com/showlove/initysl';
+
 const navItems = [
   { label: 'Home', href: '/#home' },
   { label: 'Features', href: '/#features' },
@@ -89,6 +91,15 @@ export function LandingNavbar() {
           </div>
 
           <div className='flex items-center gap-2.5'>
+            <a
+              href={showLoveUrl}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='hidden rounded-full border border-amber-300/30 bg-amber-400/10 px-4 py-2 text-[12px] font-semibold text-amber-100 no-underline transition hover:bg-amber-400/20 sm:inline-flex'
+            >
+              Show Love
+            </a>
+
             <motion.a
               href='/auth'
               whileHover={{ scale: 1.03 }}
@@ -156,6 +167,16 @@ export function LandingNavbar() {
         >
           Sign in
         </motion.a>
+
+        <a
+          href={showLoveUrl}
+          target='_blank'
+          rel='noopener noreferrer'
+          onClick={() => setMobileOpen(false)}
+          className='mt-2 inline-flex w-full items-center justify-center rounded-lg border border-amber-300/30 bg-amber-500/10 px-4 py-2.5 text-sm font-semibold text-amber-100 no-underline transition hover:bg-amber-500/20'
+        >
+          Show Love
+        </a>
       </div>
     </>
   );

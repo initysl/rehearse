@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
-import { Aldrich, Nova_Square } from 'next/font/google';
+import { Aldrich, Changa } from 'next/font/google';
 import './globals.css';
 import { AmbientBackground } from '@/components/landing/ambient-background';
 import { Providers } from './providers';
 
-const nova = Nova_Square({
-  variable: '--nova-square',
+const changa = Changa({
+  variable: '--changa',
   subsets: ['latin'],
-  weight: '400',
+  weight: ['400', '500', '600', '700'],
 });
 
 const aldrich = Aldrich({
@@ -85,7 +85,7 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <body
-        className={`${nova.variable} ${aldrich.variable} relative min-h-screen bg-[#0f0e06] antialiased`}
+        className={`${changa.variable} ${aldrich.variable} relative min-h-screen bg-[#0f0e06] antialiased`}
       >
         <AmbientBackground />
         <div className='relative z-10'>

@@ -14,7 +14,7 @@
 @theme inline {
   --color-background: var(--canvas);
   --color-foreground: var(--ink-strong);
-  --font-sans: var(--nova-square);
+  --font-sans: var(--changa);
   --font-mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
 }
 
@@ -28,7 +28,7 @@ button,
 input,
 textarea,
 select {
-  font-family: var(--nova-square);
+  font-family: var(--changa);
 }
 
 h1,
@@ -41,8 +41,8 @@ h6 {
   letter-spacing: -0.015em;
 }
 
-.nova {
-  font-family: var(--nova-square);
+.changa {
+  font-family: var(--changa);
 }
 
 .aldrich {
