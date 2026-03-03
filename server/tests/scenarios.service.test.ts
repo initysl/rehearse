@@ -34,6 +34,8 @@ test("listScenarios returns mapped scenarios with visibility filters", async () 
           character_profile: {
             name: "Jordan",
             role: "Manager",
+            gender: "male",
+            voiceId: "daniel",
             personality: ["fair"],
             goals: ["control budget"],
             emotionalState: "calm",
@@ -84,6 +86,8 @@ test("createCustomScenario inserts with user as owner", async () => {
           character_profile: {
             name: "Alex",
             role: "Neighbor",
+            gender: "male",
+            voiceId: "austin",
             personality: ["defensive"],
             goals: ["avoid conflict"],
             emotionalState: "guarded",
@@ -107,6 +111,8 @@ test("createCustomScenario inserts with user as owner", async () => {
     characterProfile: {
       name: "Alex",
       role: "Neighbor",
+      gender: "male",
+      voiceId: "austin",
       personality: ["defensive"],
       goals: ["avoid conflict"],
       emotionalState: "guarded",

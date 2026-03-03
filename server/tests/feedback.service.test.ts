@@ -150,6 +150,7 @@ test("ensureSessionFeedback generates and persists feedback for completed sessio
     query: async (sql: string) => {
       transactionQueries.push(sql);
       if (sql === "BEGIN") return { rows: [] };
+      if (sql.includes("FROM public.feedback")) return { rows: [] };
       if (sql.includes("INSERT INTO public.feedback")) {
         return {
           rows: [
@@ -184,8 +185,10 @@ test("ensureSessionFeedback generates and persists feedback for completed sessio
         };
       }
       if (sql.includes("COUNT(*)::text AS count")) return { rows: [{ count: "3" }] };
+      if (sql.includes("FROM public.progress_snapshots")) return { rows: [] };
       if (sql.includes("INSERT INTO public.progress_snapshots")) return { rows: [] };
       if (sql === "COMMIT") return { rows: [] };
+      if (sql === "ROLLBACK") return { rows: [] };
       throw new Error(`Unexpected transactional SQL: ${sql}`);
     },
     release: () => undefined,
