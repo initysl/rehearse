@@ -8,6 +8,28 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/privacy',
   },
+  openGraph: {
+    title: 'Privacy Policy | Rehearse',
+    description:
+      'How Rehearse handles account data, transcripts, voice processing, retention, and security.',
+    url: '/privacy',
+    type: 'article',
+    images: [
+      {
+        url: '/og-privacy.png',
+        width: 1200,
+        height: 630,
+        alt: 'Rehearse Privacy Policy',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Privacy Policy | Rehearse',
+    description:
+      'How Rehearse handles account data, transcripts, voice processing, retention, and security.',
+    images: ['/og-privacy.png'],
+  },
 };
 
 export default function PrivacyPage() {

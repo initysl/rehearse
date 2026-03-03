@@ -8,6 +8,28 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/terms',
   },
+  openGraph: {
+    title: 'Terms of Use | Rehearse',
+    description:
+      'Review Rehearse terms covering account use, acceptable behavior, AI output limitations, and service availability.',
+    url: '/terms',
+    type: 'article',
+    images: [
+      {
+        url: '/og-terms.png',
+        width: 1200,
+        height: 630,
+        alt: 'Rehearse Terms of Use',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Terms of Use | Rehearse',
+    description:
+      'Review Rehearse terms covering account use, acceptable behavior, AI output limitations, and service availability.',
+    images: ['/og-terms.png'],
+  },
 };
 
 export default function TermsPage() {

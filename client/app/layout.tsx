@@ -18,6 +18,7 @@ const aldrich = Aldrich({
 
 const defaultSiteUrl = 'http://localhost:3000';
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || defaultSiteUrl;
+const socialImagePath = '/og-image.png';
 const metadataBase = (() => {
   try {
     return new URL(appUrl);
@@ -57,16 +58,29 @@ export const metadata: Metadata = {
     description:
       'Build confidence for salary negotiations, difficult family talks, medical appointments, and other high-stakes conversations.',
     url: '/',
+    images: [
+      {
+        url: socialImagePath,
+        width: 1200,
+        height: 630,
+        alt: 'Rehearse AI Conversation Simulator',
+      },
+    ],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Rehearse | AI Conversation Simulator',
     description:
       'Practice real-life conversations with AI and get actionable feedback after every session.',
+    images: [socialImagePath],
   },
   icons: {
-    icon: [{ url: '/favicon.ico?v=2' }],
-    shortcut: ['/favicon.ico?v=2'],
+    icon: [
+      { url: '/rehearse.svg?v=1', type: 'image/svg+xml' },
+      { url: '/favicon.ico?v=4' },
+    ],
+    shortcut: ['/favicon.ico?v=4'],
+    apple: [{ url: '/apple-touch-icon.png' }],
   },
   robots: {
     index: true,
