@@ -1,4 +1,14 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  description:
+    'Read how Rehearse collects, uses, protects, and retains account, session, transcript, and voice-processing data.',
+  alternates: {
+    canonical: '/privacy',
+  },
+};
 
 export default function PrivacyPage() {
   return (

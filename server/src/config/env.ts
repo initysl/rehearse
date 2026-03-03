@@ -96,8 +96,7 @@ export const env = {
   ),
   TTS_TIMEOUT_MS: parseNumber(process.env.TTS_TIMEOUT_MS, 60000),
   ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || '',
-  ELEVENLABS_MODEL_ID:
-    process.env.ELEVENLABS_MODEL_ID || 'eleven_flash_v2_5',
+  ELEVENLABS_MODEL_ID: process.env.ELEVENLABS_MODEL_ID || 'eleven_flash_v2_5',
   ELEVENLABS_VOICE_MALE: process.env.ELEVENLABS_VOICE_MALE || '',
   ELEVENLABS_VOICE_FEMALE: process.env.ELEVENLABS_VOICE_FEMALE || '',
   GROQ_STREAM_TIMEOUT_MS: parseInt(

@@ -1,4 +1,14 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Terms of Use',
+  description:
+    'Review the Terms of Use for Rehearse, including acceptable use, AI output limitations, service availability, and account responsibilities.',
+  alternates: {
+    canonical: '/terms',
+  },
+};
 
 export default function TermsPage() {
   return (
@@ -79,7 +89,7 @@ export default function TermsPage() {
       </section>
 
       <section className='mt-8'>
-        <h2 className='text-xl'>5.Limits and Availability</h2>
+        <h2 className='text-xl'>5. Limits and Availability</h2>
         <ul className='mt-2 list-disc space-y-2 pl-5 text-sm leading-relaxed text-white/80'>
           <li>
             Features and provider availability (voice, transcription, text

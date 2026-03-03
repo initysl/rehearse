@@ -1,3 +1,5 @@
+'use client';
+
 import { FiMic, FiStar } from 'react-icons/fi';
 import { ProgressBar } from '@/components/landing/progress-bar';
 
