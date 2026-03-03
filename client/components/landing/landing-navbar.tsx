@@ -58,18 +58,18 @@ export function LandingNavbar() {
   return (
     <>
       <nav
-        className='fixed left-0 right-0 top-0 z-50 border-b border-white/6 backdrop-blur-xl'
+        className='fixed left-0 right-0 top-0 z-50 border-b border-white/6 backdrop-blur-xl px-6'
         style={{ background: 'rgba(15,14,6,0.85)' }}
       >
-        <div className='flex h-14 w-full items-center justify-between px-6'>
+        <div className='flex h-14 w-full items-center justify-between'>
           <Link href='/' className='flex items-center no-underline'>
             <Image
               src='/rehearse.svg'
               alt='Rehearse logo'
               width={60}
-              height={50}
+              height={20}
             />
-            <span className='aldrich text-[17px] font-semibold text-white'>
+            <span className='aldrich text-md font-semibold text-white'>
               Rehearse
             </span>
           </Link>

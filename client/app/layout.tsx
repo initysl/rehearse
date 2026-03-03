@@ -64,6 +64,10 @@ export const metadata: Metadata = {
     description:
       'Practice real-life conversations with AI and get actionable feedback after every session.',
   },
+  icons: {
+    icon: [{ url: '/favicon.ico?v=2' }],
+    shortcut: ['/favicon.ico?v=2'],
+  },
   robots: {
     index: true,
     follow: true,

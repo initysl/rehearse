@@ -98,7 +98,7 @@ export function HeroSection() {
               className='flex flex-wrap items-center gap-5'
             >
               {[
-                'No credit card required',
+                'Free',
                 'Voice & text modes',
                 'AI coaching after every session',
               ].map((point) => (

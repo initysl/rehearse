@@ -9,7 +9,11 @@ const legalLinks = [
 const socialLinks = [
   { label: 'Github', href: 'https://www.github.com/initysl', icon: FiGithub },
   { label: 'X', href: 'https://x.com/initysl', icon: FiTwitter },
-  { label: 'Instagram', href: 'https://t.me', icon: FiInstagram },
+  {
+    label: 'Instagram',
+    href: 'https://www.instagram.com/initysl',
+    icon: FiInstagram,
+  },
 ];
 
 export function LandingFooter() {
