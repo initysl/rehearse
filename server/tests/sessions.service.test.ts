@@ -20,7 +20,8 @@ test("startSession returns null and rolls back when scenario is inaccessible", a
     query: async (sql: string) => {
       executedSql.push(sql);
       if (sql === "BEGIN") return { rows: [] };
-      if (sql.includes("SELECT id")) return { rows: [] };
+      if (sql.includes("FROM public.sessions")) return { rows: [] };
+      if (sql.includes("FROM public.scenarios")) return { rows: [] };
       if (sql === "ROLLBACK") return { rows: [] };
       throw new Error(`Unexpected SQL: ${sql}`);
     },
@@ -41,7 +42,65 @@ test("startSession returns null and rolls back when scenario is inaccessible", a
 
   assert.equal(result, null);
   assert.ok(executedSql.includes("BEGIN"));
+  assert.equal(
+    executedSql.some((sql) => sql.includes("FROM public.sessions")),
+    true
+  );
   assert.ok(executedSql.includes("ROLLBACK"));
+  assert.equal(released, true);
+});
+
+test("startSession returns existing active session for user", async () => {
+  const executedSql: string[] = [];
+  let released = false;
+
+  const fakeClient = {
+    query: async (sql: string) => {
+      executedSql.push(sql);
+      if (sql === "BEGIN") return { rows: [] };
+      if (sql.includes("FROM public.sessions")) {
+        return {
+          rows: [
+            {
+              id: "77777777-7777-7777-7777-777777777777",
+              user_id: "user-1",
+              scenario_id: "88888888-8888-8888-8888-888888888888",
+              custom_context: null,
+              difficulty_level: "neutral",
+              status: "active",
+              started_at: new Date("2026-03-01T10:00:00.000Z"),
+              ended_at: null,
+            },
+          ],
+        };
+      }
+      if (sql === "COMMIT") return { rows: [] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release: () => {
+      released = true;
+    },
+  };
+
+  (db as unknown as { connect: typeof db.connect }).connect = (async () => {
+    return fakeClient as never;
+  }) as typeof db.connect;
+
+  const result = await startSession("user-1", {
+    scenarioId: "33333333-3333-3333-3333-333333333333",
+    difficultyLevel: "neutral",
+    customContext: "test context",
+  });
+
+  assert.ok(result);
+  assert.equal(result?.id, "77777777-7777-7777-7777-777777777777");
+  assert.equal(result?.status, "active");
+  assert.ok(executedSql.includes("BEGIN"));
+  assert.ok(executedSql.includes("COMMIT"));
+  assert.equal(
+    executedSql.some((sql) => sql.includes("INSERT INTO public.sessions")),
+    false
+  );
   assert.equal(released, true);
 });
 

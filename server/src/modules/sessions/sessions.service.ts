@@ -87,6 +87,30 @@ export const startSession = async (
   try {
     await client.query("BEGIN");
 
+    const existingActive = await client.query<SessionRow>(
+      `SELECT
+        id,
+        user_id,
+        scenario_id,
+        custom_context,
+        difficulty_level,
+        status,
+        started_at,
+        ended_at
+       FROM public.sessions
+       WHERE user_id = $1
+         AND status = 'active'
+       ORDER BY started_at DESC
+       LIMIT 1
+       FOR UPDATE`,
+      [userId]
+    );
+
+    if (existingActive.rows[0]) {
+      await client.query("COMMIT");
+      return mapSession(existingActive.rows[0]);
+    }
+
     const scenario = await client.query<{ id: string }>(
       `SELECT id
        FROM public.scenarios

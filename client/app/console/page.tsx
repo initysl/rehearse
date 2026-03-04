@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   FiAlertCircle,
@@ -33,6 +33,7 @@ import {
   useUpdateScenarioMutation,
 } from '@/lib/hooks/use-scenarios';
 import {
+  useSessionHistoryQuery,
   useClearSessionHistoryMutation,
   useDeleteSessionMutation,
   useEndSessionMutation,
@@ -64,6 +65,7 @@ export default function ConsolePage() {
     null,
   );
   const [lastActionMessage, setLastActionMessage] = useState('');
+  const hasAutoRestoredSessionRef = useRef(false);
 
   const [scenarioSearch, setScenarioSearch] = useState('');
   const [scenarioCategory, setScenarioCategory] =
@@ -90,6 +92,11 @@ export default function ConsolePage() {
   const historyQuery = useSessionHistoryInfiniteQuery(
     accessToken,
     { pageSize: 20 },
+    isAuthenticated,
+  );
+  const activeSessionQuery = useSessionHistoryQuery(
+    accessToken,
+    { status: 'active', limit: 1, offset: 0 },
     isAuthenticated,
   );
   const detailQuery = useSessionDetailQuery(
@@ -134,6 +141,8 @@ export default function ConsolePage() {
     scenarioOptions.find((scenario) => scenario.id === selectedScenarioId) ||
     null;
   const currentSessionStatus = detailQuery.data?.session.status;
+  const activeServerSession = activeSessionQuery.data?.sessions?.[0] || null;
+  const hasLiveSession = Boolean(activeServerSession);
   const isVoiceEnabled = Boolean(
     isAuthenticated &&
     activeSessionId &&
@@ -222,6 +231,22 @@ export default function ConsolePage() {
       setSelectedScenarioId(scenarioOptions[0].id);
     }
   }, [selectedScenarioId, scenarioOptions]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (activeSessionId) return;
+    if (!activeServerSession) return;
+    if (hasAutoRestoredSessionRef.current) return;
+
+    hasAutoRestoredSessionRef.current = true;
+    setActiveSessionId(activeServerSession.id);
+    setFeedbackSessionId(activeServerSession.id);
+    setActiveView('conversation');
+    setSelectedScenarioId((previous) =>
+      previous || activeServerSession.scenarioId,
+    );
+    setLastActionMessage('Restored your active session.');
+  }, [activeServerSession, activeSessionId, isAuthenticated]);
 
   useEffect(() => {
     if (activeSessionId) return;
@@ -481,7 +506,7 @@ export default function ConsolePage() {
       isStarting={startSessionMutation.isPending}
       isEnding={endSessionMutation.isPending}
       activeSessionId={activeSessionId}
-      hasLiveSession={currentSessionStatus === 'active'}
+      hasLiveSession={hasLiveSession}
       errorMessage={sessionErrorMessage}
     />
   );
