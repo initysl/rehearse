@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     siteName: 'Rehearse',
     title: 'Rehearse | AI Conversation Simulator',
     description:
-      'Build confidence for salary negotiations, difficult family talks, medical appointments, and other high-stakes conversations.',
+      'Build confidence for salary negotiations, interviews, medical appointments, and other high-stakes conversations.',
     url: '/',
     images: [
       {

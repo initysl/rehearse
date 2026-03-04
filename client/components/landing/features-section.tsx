@@ -52,7 +52,7 @@ const features: FeatureCard[] = [
 
 export function FeaturesSection() {
   return (
-    <section id='features' className='scroll-mt-20 px-6 py-16'>
+    <section id='features' className='scroll-mt-20 px-3 py-16'>
       <div className='mx-auto max-w-7xl'>
         <Reveal>
           <p className='mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/30'>
@@ -73,7 +73,8 @@ export function FeaturesSection() {
                 whileHover={{ y: -4 }}
                 className='group h-full cursor-default rounded-2xl border border-white/6 p-5 transition-colors hover:border-white/10'
                 style={{
-                  background: 'linear-gradient(135deg, #1c1a0b 0%, #141208 100%)',
+                  background:
+                    'linear-gradient(135deg, #1c1a0b 0%, #141208 100%)',
                 }}
               >
                 <div

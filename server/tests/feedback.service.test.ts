@@ -147,11 +147,16 @@ test("ensureSessionFeedback generates and persists feedback for completed sessio
 
   const transactionQueries: string[] = [];
   const fakeClient = {
-    query: async (sql: string) => {
+    query: async (sqlInput: string | { text?: string }) => {
+      const sqlRaw =
+        typeof sqlInput === "string" ? sqlInput : (sqlInput.text ?? "");
+      const sql = sqlRaw.trim();
+      const normalizedSql = sql.replace(/\s+/g, " ").toUpperCase();
+
       transactionQueries.push(sql);
-      if (sql === "BEGIN") return { rows: [] };
-      if (sql.includes("FROM public.feedback")) return { rows: [] };
-      if (sql.includes("INSERT INTO public.feedback")) {
+      if (normalizedSql === "BEGIN") return { rows: [] };
+      if (normalizedSql.includes("FROM PUBLIC.FEEDBACK")) return { rows: [] };
+      if (normalizedSql.includes("INSERT INTO PUBLIC.FEEDBACK")) {
         return {
           rows: [
             {
@@ -184,11 +189,17 @@ test("ensureSessionFeedback generates and persists feedback for completed sessio
           ],
         };
       }
-      if (sql.includes("COUNT(*)::text AS count")) return { rows: [{ count: "3" }] };
-      if (sql.includes("FROM public.progress_snapshots")) return { rows: [] };
-      if (sql.includes("INSERT INTO public.progress_snapshots")) return { rows: [] };
-      if (sql === "COMMIT") return { rows: [] };
-      if (sql === "ROLLBACK") return { rows: [] };
+      if (normalizedSql.includes("COUNT(*)::TEXT AS COUNT")) {
+        return { rows: [{ count: "3" }] };
+      }
+      if (normalizedSql.includes("FROM PUBLIC.PROGRESS_SNAPSHOTS")) {
+        return { rows: [] };
+      }
+      if (normalizedSql.includes("INSERT INTO PUBLIC.PROGRESS_SNAPSHOTS")) {
+        return { rows: [] };
+      }
+      if (normalizedSql === "COMMIT") return { rows: [] };
+      if (normalizedSql === "ROLLBACK") return { rows: [] };
       throw new Error(`Unexpected transactional SQL: ${sql}`);
     },
     release: () => undefined,

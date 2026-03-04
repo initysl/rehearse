@@ -58,7 +58,7 @@ export function LandingNavbar() {
   return (
     <>
       <nav
-        className='fixed left-0 right-0 top-0 z-50 border-b border-white/6 backdrop-blur-xl px-6'
+        className='fixed left-0 right-0 top-0 z-50 border-b border-white/6 backdrop-blur-xl px-3'
         style={{ background: 'rgba(15,14,6,0.85)' }}
       >
         <div className='flex h-14 w-full items-center justify-between'>
@@ -69,7 +69,7 @@ export function LandingNavbar() {
               width={60}
               height={20}
             />
-            <span className='aldrich text-md font-semibold text-white'>
+            <span className='aldrich text-md hidden sm:block font-semibold text-white'>
               Rehearse
             </span>
           </Link>

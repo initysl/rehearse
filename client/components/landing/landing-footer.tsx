@@ -18,7 +18,7 @@ const socialLinks = [
 
 export function LandingFooter() {
   return (
-    <footer className='border-t border-white/5 px-6 py-8'>
+    <footer className='border-t border-white/5 px-3 py-8'>
       <div className='mx-auto grid max-w-7xl grid-cols-1 items-center gap-4 text-white md:grid-cols-[1fr_auto_1fr]'>
         <div className='flex flex-wrap justify-center gap-6 md:justify-start'>
           {legalLinks.map((item) => (

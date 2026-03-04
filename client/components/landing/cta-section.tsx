@@ -1,11 +1,10 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { Reveal } from '@/components/landing/reveal';
 
 export function CtaSection() {
   return (
-    <section className='px-6 py-20'>
+    <section className='px-3 py-20'>
       <div className='mx-auto max-w-7xl'>
         <Reveal>
           <div
@@ -28,8 +27,8 @@ export function CtaSection() {
               Run your first rehearsal now.
             </h2>
             <p className='relative mx-auto mb-8 max-w-md text-[15px] text-white/40'>
-              Sign in with Google. Pick or customize a conversation.
-              Start practicing — no setup, no friction.
+              Sign in with Google. Pick or customize a conversation. Start
+              practicing — no setup, no friction.
             </p>
             {/* <div className='relative flex flex-wrap items-center justify-center gap-4'>
               <motion.a

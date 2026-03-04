@@ -3,21 +3,19 @@
 import { motion } from 'framer-motion';
 import {
   FiArrowRight,
-  FiAtSign,
   FiCheck,
-  FiLogIn,
   FiMic,
   FiPlay,
   FiStar,
   FiZap,
 } from 'react-icons/fi';
-import { Reveal, fadeUp } from '@/components/landing/reveal';
+import { fadeUp } from '@/components/landing/reveal';
 import { Waveform } from '@/components/landing/waveform';
 import { ScoreRing } from '@/components/landing/score-ring';
 
 export function HeroSection() {
   return (
-    <section id='home' className='relative scroll-mt-20 px-6 pb-10 pt-28'>
+    <section id='home' className='relative scroll-mt-20 px-3 pb-10 pt-28'>
       <div className='mx-auto max-w-7xl'>
         <div className='mb-12 grid items-center gap-10 lg:grid-cols-[1fr_auto]'>
           <div>

@@ -5,7 +5,7 @@ import { ProgressBar } from '@/components/landing/progress-bar';
 
 export function SlidersSection() {
   return (
-    <section className='px-6 pb-10'>
+    <section className='px-3 pb-10'>
       <div className='mx-auto max-w-7xl'>
         <div className='grid gap-4 md:grid-cols-2'>
           <ProgressBar
