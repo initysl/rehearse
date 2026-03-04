@@ -400,9 +400,9 @@ export function ScenarioBrowserView({
       }
     >
       <div className='grid gap-4 xl:grid-cols-[1.1fr_0.9fr]'>
-        <section className='space-y-3'>
-          <div className='grid gap-2 sm:grid-cols-[1fr_130px_auto]'>
-            <label className='relative block'>
+        <section className='min-w-0 space-y-3'>
+          <div className='flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center'>
+            <label className='relative block min-w-0 flex-1'>
               <FiSearch
                 size={14}
                 className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/35'
@@ -420,7 +420,7 @@ export function ScenarioBrowserView({
               onChange={(event) =>
                 onCategoryChange(event.target.value as ScenarioCategoryFilter)
               }
-              className='rounded-xl border border-white/15 bg-[#141414] px-3 py-2.5 text-sm text-white outline-none focus:border-amber-400/50'
+              className='w-full rounded-xl border border-white/15 bg-[#141414] px-3 py-2.5 text-sm text-white outline-none focus:border-amber-400/50 sm:w-36'
             >
               <option value='all'>All</option>
               {scenarioCategories.map((entry) => (
@@ -430,7 +430,7 @@ export function ScenarioBrowserView({
               ))}
             </select>
 
-            <label className='inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-xs text-white/80'>
+            <label className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-xs text-white/80 sm:w-auto'>
               <input
                 type='checkbox'
                 checked={customOnly}
@@ -531,7 +531,7 @@ export function ScenarioBrowserView({
           </div>
         </section>
 
-        <section className='rounded-xl h-120 overflow-y-auto border border-white/12 bg-[#131313]/85 p-3 sm:p-4'>
+        <section className='min-w-0 rounded-xl h-120 overflow-y-auto border border-white/12 bg-[#131313]/85 p-3 sm:p-4'>
           <div className='mb-3 flex items-center justify-between gap-2'>
             <p className='inline-flex items-center gap-2 text-sm font-semibold text-white'>
               <FiPlus size={14} />
