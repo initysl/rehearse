@@ -187,7 +187,7 @@ export function DashboardShell({
             sidebarOpen={sidebarOpen}
           />
 
-          <div className='min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.22)_transparent] [scrollbar-width:thin]'>
+          <div className='min-h-0 flex-1 overflow-x-hidden overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.22)_transparent] [scrollbar-width:thin]'>
             {children}
           </div>
         </div>

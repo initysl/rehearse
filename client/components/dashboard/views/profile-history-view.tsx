@@ -47,8 +47,9 @@ export function ProfileHistoryView({
     <Panel
       title='User Profile & History'
       description='Session timeline and growth snapshot.'
+      className='overflow-x-hidden'
     >
-      <div className='grid gap-3 sm:grid-cols-3'>
+      <div className='grid min-w-0 gap-3 sm:grid-cols-3'>
         <div className='min-w-0 rounded-xl border border-white/15 bg-[#141414] p-3'>
           <p className='inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-white/45'>
             <FiUser />
@@ -78,7 +79,7 @@ export function ProfileHistoryView({
         </div>
       </div>
 
-      <div className='mt-4'>
+      <div className='mt-4 min-w-0 overflow-x-hidden'>
         <div className='mb-2 flex flex-wrap items-center justify-between gap-3'>
           <p className='inline-flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-white/45'>
             <FiClock size={12} />
@@ -98,7 +99,7 @@ export function ProfileHistoryView({
           </div>
         </div>
 
-        <div className='max-h-96 space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.2)_transparent] [scrollbar-width:thin]'>
+        <div className='max-h-96 min-w-0 space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.2)_transparent] [scrollbar-width:thin]'>
           {isHistoryLoading ? (
             <p className='rounded-xl border border-white/15 bg-[#141414] px-3 py-2 text-sm text-white/45'>
               Loading history...

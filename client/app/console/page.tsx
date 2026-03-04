@@ -609,7 +609,7 @@ export default function ConsolePage() {
       onLogout={handleLogout}
     >
       <div className='grid gap-4 xl:grid-cols-[1.25fr_0.75fr]'>
-        <div className='space-y-4'>
+        <div className='min-w-0 space-y-4'>
           {primaryOutlet}
 
           {lastActionMessage ? (
@@ -627,7 +627,7 @@ export default function ConsolePage() {
           ) : null}
         </div>
 
-        <div className='space-y-4'>
+        <div className='min-w-0 space-y-4'>
           {secondaryRail[0]}
           {secondaryRail[1]}
 

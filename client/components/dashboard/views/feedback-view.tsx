@@ -11,9 +11,9 @@ export function FeedbackView({ feedbackStatus, feedback }: FeedbackViewProps) {
     <Panel
       title='Feedback Dashboard'
       description={feedbackStatus}
-      className='h-auto'
+      className='h-auto overflow-x-hidden'
     >
-      <div className='min-w-0 rounded-xl border border-white/15 bg-[#141414] p-3 text-sm text-white/75'>
+      <div className='min-w-0 overflow-x-hidden rounded-xl border border-white/15 bg-[#141414] p-3 text-sm text-white/75'>
         {feedback?.kind === 'pending' ? (
           <p className='wrap-break-word'>
             Processing ({feedback.data.queueStatus.state}) and checking
@@ -58,13 +58,13 @@ export function FeedbackView({ feedbackStatus, feedback }: FeedbackViewProps) {
                 <p className='text-[10px] uppercase tracking-[0.12em] text-white/45'>
                   Phrases to Try
                 </p>
-                <div className='mt-1 flex flex-wrap gap-1.5'>
+                <div className='mt-1 min-w-0 overflow-hidden flex flex-wrap gap-1.5'>
                   {feedback.data.feedback.fullFeedback.phrasesToTry
                     .slice(0, 6)
                     .map((phrase) => (
                       <span
                         key={phrase}
-                        className='max-w-full rounded-full border border-white/15 bg-white/4 px-2 py-1 text-[11px] text-white/70 wrap-break-word whitespace-normal'
+                        className='max-w-full rounded-full border border-white/15 bg-white/4 px-2 py-1 text-[11px] text-white/70 break-all whitespace-normal'
                       >
                         {phrase}
                       </span>
