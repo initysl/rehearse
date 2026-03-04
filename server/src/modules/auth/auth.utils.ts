@@ -52,8 +52,9 @@ const decodeSignedCookie = <T>(rawValue: string): T | null => {
 
 const cookieBaseOptions = {
   httpOnly: true,
-  secure: env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  secure:
+    env.NODE_ENV === "production" || env.AUTH_COOKIE_SAME_SITE === "none",
+  sameSite: env.AUTH_COOKIE_SAME_SITE,
   path: "/",
 };
 

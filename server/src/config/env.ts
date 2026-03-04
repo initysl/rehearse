@@ -30,6 +30,21 @@ const parseTtsProvider = (
   return fallback;
 };
 
+const parseCookieSameSite = (
+  value: string | undefined,
+  fallback: 'lax' | 'strict' | 'none',
+): 'lax' | 'strict' | 'none' => {
+  const normalized = value?.trim().toLowerCase();
+  if (
+    normalized === 'lax' ||
+    normalized === 'strict' ||
+    normalized === 'none'
+  ) {
+    return normalized;
+  }
+  return fallback;
+};
+
 const parseTtsFallbackPolicy = (
   value: string | undefined,
   fallback: 'always' | 'rate_limit_only',
@@ -78,6 +93,10 @@ export const env = {
   AUTH_ERROR_REDIRECT_URL:
     process.env.AUTH_ERROR_REDIRECT_URL ||
     `${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/error`,
+  AUTH_COOKIE_SAME_SITE: parseCookieSameSite(
+    process.env.AUTH_COOKIE_SAME_SITE,
+    (process.env.NODE_ENV || 'development') === 'production' ? 'none' : 'lax',
+  ),
   COOKIE_SIGNING_SECRET: required('COOKIE_SIGNING_SECRET'),
   GROQ_API_KEY: required('GROQ_API_KEY'),
   GROQ_MODEL: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
