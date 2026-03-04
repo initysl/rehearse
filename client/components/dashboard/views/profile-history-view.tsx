@@ -49,7 +49,7 @@ export function ProfileHistoryView({
       description='Session timeline and growth snapshot.'
     >
       <div className='grid gap-3 sm:grid-cols-3'>
-        <div className='rounded-xl border border-white/15 bg-[#141414] p-3'>
+        <div className='min-w-0 rounded-xl border border-white/15 bg-[#141414] p-3'>
           <p className='inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-white/45'>
             <FiUser />
             Account
@@ -57,7 +57,7 @@ export function ProfileHistoryView({
           <p className='mt-1 truncate text-xs text-white/75'>{userSummary}</p>
         </div>
 
-        <div className='rounded-xl border border-white/15 bg-[#141414] p-3'>
+        <div className='min-w-0 rounded-xl border border-white/15 bg-[#141414] p-3'>
           <p className='inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-white/45'>
             <FiTrendingUp />
             Completed
@@ -67,7 +67,7 @@ export function ProfileHistoryView({
           </p>
         </div>
 
-        <div className='rounded-xl border border-white/15 bg-[#141414] p-3'>
+        <div className='min-w-0 rounded-xl border border-white/15 bg-[#141414] p-3'>
           <p className='inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-white/45'>
             <FiBarChart2 />
             Scenarios
@@ -79,19 +79,19 @@ export function ProfileHistoryView({
       </div>
 
       <div className='mt-4'>
-        <div className='mb-2 flex items-center justify-between gap-3'>
+        <div className='mb-2 flex flex-wrap items-center justify-between gap-3'>
           <p className='inline-flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-white/45'>
             <FiClock size={12} />
             Recent Sessions
           </p>
-          <div className='flex items-center gap-2'>
+          <div className='flex w-full items-center justify-start gap-2 sm:w-auto'>
             <button
               type='button'
               onClick={() => {
                 void onClearRecentSessions();
               }}
               disabled={isClearingRecentSessions || historyItems.length === 0}
-              className='rounded-md border border-white/20 bg-white/5 px-2.5 py-1 text-[10px] uppercase tracking-widest text-white/60 transition hover:border-amber-300/40 hover:text-amber-200 disabled:cursor-not-allowed disabled:opacity-50'
+              className='w-full rounded-md border border-white/20 bg-white/5 px-2.5 py-1 text-[10px] uppercase tracking-widest text-white/60 transition hover:border-amber-300/40 hover:text-amber-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto'
             >
               {isClearingRecentSessions ? 'Clearing...' : 'Clear recent'}
             </button>
@@ -107,7 +107,7 @@ export function ProfileHistoryView({
             historyItems.map((session) => (
               <div
                 key={session.id}
-                className='flex items-center gap-2 rounded-xl border border-white/15 bg-[#141414] px-3 py-2 transition hover:border-amber-400/35'
+                className='min-w-0 flex items-center gap-2 rounded-xl border border-white/15 bg-[#141414] px-3 py-2 transition hover:border-amber-400/35'
               >
                 <button
                   type='button'
@@ -118,7 +118,7 @@ export function ProfileHistoryView({
                     <p className='truncate text-sm text-white'>
                       {session.scenarioTitle}
                     </p>
-                    <p className='text-xs uppercase tracking-[0.08em] text-white/45'>
+                    <p className='truncate text-xs uppercase tracking-[0.08em] text-white/45'>
                       {session.scenarioCategory} · {session.status}
                     </p>
                   </div>

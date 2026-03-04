@@ -13,9 +13,9 @@ export function FeedbackView({ feedbackStatus, feedback }: FeedbackViewProps) {
       description={feedbackStatus}
       className='h-auto'
     >
-      <div className='rounded-xl border border-white/15 bg-[#141414] p-3 text-sm text-white/75'>
+      <div className='min-w-0 rounded-xl border border-white/15 bg-[#141414] p-3 text-sm text-white/75'>
         {feedback?.kind === 'pending' ? (
-          <p>
+          <p className='wrap-break-word'>
             Processing ({feedback.data.queueStatus.state}) and checking
             automatically.
           </p>
@@ -47,7 +47,7 @@ export function FeedbackView({ feedbackStatus, feedback }: FeedbackViewProps) {
               <p className='text-[10px] uppercase tracking-[0.12em] text-white/45'>
                 Overall Summary
               </p>
-              <p className='mt-1 text-xs text-white/65'>
+              <p className='mt-1 wrap-break-word text-xs text-white/65'>
                 {feedback.data.feedback.fullFeedback.overallSummary ||
                   'Feedback generated successfully.'}
               </p>
@@ -64,7 +64,7 @@ export function FeedbackView({ feedbackStatus, feedback }: FeedbackViewProps) {
                     .map((phrase) => (
                       <span
                         key={phrase}
-                        className='rounded-full border border-white/15 bg-white/4 px-2 py-1 text-[11px] text-white/70'
+                        className='max-w-full rounded-full border border-white/15 bg-white/4 px-2 py-1 text-[11px] text-white/70 wrap-break-word whitespace-normal'
                       >
                         {phrase}
                       </span>
