@@ -235,4 +235,4 @@ Key entry points:
 ## Co-Contributor
 Claude - Codex
 
-Made with ❤️ for humans and alies :)
+Made with ❤️ for humans and aliens:)
