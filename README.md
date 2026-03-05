@@ -232,39 +232,7 @@ Key entry points:
 - `ws://<api-host>/ws/voice?sessionId=<uuid>`
 
 ---
+## Co-Contributor
+Claude - Codex
 
-## Production Deployment Notes
-
-Use two services/domains:
-
-1. Frontend service (Next.js)
-2. Backend service (Express API)
-
-Essential env alignment:
-
-- Frontend:
-  - `NEXT_PUBLIC_API_BASE_URL=https://<api-domain>`
-  - `NEXT_PUBLIC_APP_URL=https://<web-domain>`
-
-- Backend:
-  - `SERVER_URL=https://<api-domain>`
-  - `CLIENT_URL=https://<web-domain>`
-  - `GOOGLE_OAUTH_REDIRECT_URL=https://<api-domain>/auth/oauth/google/callback`
-  - `AUTH_SUCCESS_REDIRECT_URL=https://<web-domain>/auth/callback`
-  - `AUTH_ERROR_REDIRECT_URL=https://<web-domain>/auth/error`
-  - `AUTH_COOKIE_SAME_SITE=none` (required for split-domain cookie auth)
-
-Google OAuth + Supabase:
-
-- Google OAuth redirect URI must include:
-  - `https://<supabase-project-ref>.supabase.co/auth/v1/callback`
-- Supabase redirect allowlist should include backend callback and frontend callback URLs.
-
----
-
-## Product Direction
-
-The product and architecture direction are defined in:
-`Rehearse: AI_Conversation_Simulator_System_Design.docx`
-
-This codebase implements that direction as a practical, deployable web system focused on realistic conversation practice and measurable communication improvement.
+Made with ❤️ for humans and alies :)
