@@ -217,22 +217,3 @@ npm run build
 
 ---
 
-## API and Realtime Contract
-
-Detailed contract: `server/docs/api-contract.md`
-
-Key entry points:
-
-- `GET /health`
-- `GET /auth/oauth/google`
-- `GET /auth/oauth/google/callback`
-- `POST /sessions/start`
-- `POST /sessions/:id/message` (SSE stream)
-- `GET /feedback/:sessionId`
-- `ws://<api-host>/ws/voice?sessionId=<uuid>`
-
----
-## Co-Contributor
-Claude - Codex
-
-Made with ❤️ for humans and aliens:)
